@@ -1,0 +1,12 @@
+[project]
+name = "swap-hooks"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "jupyter>=1.1.1",
+    "matplotlib>=3.11.1",
+    "numpy>=2.5.1",
+    "requests>=2.34.2",
+]

@@ -1,0 +1,64 @@
+# =============================================================================
+# .prettierignore — adaptive-liquidity
+# Prettier only touches MD / JSON / YAML / CSS / HTML / JS here. Keep it away
+# from generated files and from the Overleaf-synced paper folder. Root Markdown
+# notes (CLAUDE.md, reference-outlines.md) are intentionally left formattable.
+# =============================================================================
+
+# --- Overleaf-synced paper folder --------------------------------------------
+# Don't let Prettier reformat anything in here (incl. .overleaf/settings.json
+# and any JSON/MD), so it never fights the Overleaf sync.
+ICBC 2026 - Hooks LP/
+
+# Artifacts
+references/
+
+# --- Dependencies / environments ---------------------------------------------
+node_modules/
+.venv/
+venv/
+env/
+
+# --- Build outputs / caches --------------------------------------------------
+build/
+dist/
+out/
+cache/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- ML experiment tracking --------------------------------------------------
+mlruns/
+mlartifacts/
+mlflow.db
+
+# --- Foundry-installed Solidity deps -----------------------------------------
+lib/
+
+# --- Research data / results (don't reformat data files) ---------------------
+research/data/
+research/results/
+research/runs/
+research/ETH_1hour/
+
+# --- LaTeX build artifacts (Prettier skips these anyway; explicit is fine) ----
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# --- Lockfiles / generated ----------------------------------------------------
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# --- Binaries (Prettier ignores, listed for clarity) -------------------------
+*.pdf
+*.png
