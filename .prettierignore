@@ -8,7 +8,7 @@
 # --- Overleaf-synced paper folder --------------------------------------------
 # Don't let Prettier reformat anything in here (incl. .overleaf/settings.json
 # and any JSON/MD), so it never fights the Overleaf sync.
-ICBC 2026 - Hooks LP/
+paper/
 
 # Artifacts
 references/
