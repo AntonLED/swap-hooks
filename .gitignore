@@ -55,3 +55,6 @@ out/
 broadcast/*/31337/
 broadcast/**/dry-run/
 lib/
+
+# Personal learning notes (not part of the paper)
+learning/
