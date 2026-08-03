@@ -49,9 +49,19 @@ logs/
 *.vrb
 *.xdv
 
-# Foundry (once `forge install` / `forge build` land here)
-cache/
-out/
-broadcast/*/31337/
-broadcast/**/dry-run/
-lib/
+# Foundry build output.
+# contracts/lib/ is deliberately NOT ignored: dependencies are git submodules,
+# so only the pinned commit hashes are stored here, not their contents. Those
+# hashes are field D of the reproducibility manifest.
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/.forge-snapshots/
+
+# Experiment IO
+data/
+results/
+
+*_cache/
+
+learning/
