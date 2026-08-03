@@ -11,6 +11,8 @@ you have to install:
 - python linter and formatter: [ruff](https://github.com/astral-sh/ruff) ;
 - node js for code linting and formatting:
   [node](https://nodejs.org/en/download);
+- smart-contracts framework:
+  [foundry](https://www.getfoundry.sh/introduction/installation);
 
 than run:
 
