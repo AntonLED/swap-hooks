@@ -58,10 +58,20 @@ contracts/cache/
 contracts/broadcast/
 contracts/.forge-snapshots/
 
+# Notebook display copies. The notebooks render a PNG beside each figure so the
+# output shows inline; the PDF next to it is what the paper uses, and the PNG is
+# already embedded in the notebook itself.
+paper/Image/*.png
+
 # Experiment IO
 data/
 results/
 
 *_cache/
 
+# Personal stuff
 learning/
+.work/
+
+# Side-repo 
+dex/

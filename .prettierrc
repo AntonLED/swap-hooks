@@ -1,17 +1,6 @@
 {
   "overrides": [
     {
-      "files": "*.sol",
-      "options": {
-        "parser": "slang",
-        "printWidth": 80,
-        "tabWidth": 4,
-        "useTabs": false,
-        "singleQuote": false,
-        "bracketSpacing": false
-      }
-    },
-    {
       "files": ["*.ts", "*.tsx"],
       "options": {
         "parser": "typescript",
