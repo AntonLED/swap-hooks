@@ -91,14 +91,16 @@ DAY = 1440 * MINUTE
 
 
 def _flat(n, value=100.0, start=0):
-    return pd.DataFrame({"open_time": [start + i * MINUTE for i in range(n)],
-                         "close": [value] * n})
+    return pd.DataFrame(
+        {"open_time": [start + i * MINUTE for i in range(n)], "close": [value] * n}
+    )
 
 
 def _wobbly(n, amplitude, start=0):
     closes = [100.0 * (1 + amplitude * (-1) ** i) for i in range(n)]
-    return pd.DataFrame({"open_time": [start + i * MINUTE for i in range(n)],
-                         "close": closes})
+    return pd.DataFrame(
+        {"open_time": [start + i * MINUTE for i in range(n)], "close": closes}
+    )
 
 
 def test_flat_price_has_zero_volatility():
@@ -133,11 +135,13 @@ def test_segments_are_whole_days_and_do_not_overlap():
 
 
 def test_select_returns_equal_counts_per_regime():
-    segs = pd.DataFrame({
-        "start_ms": [i * DAY for i in range(90)],
-        "end_ms": [(i + 1) * DAY for i in range(90)],
-        "volatility": np.linspace(0.01, 0.9, 90),
-    })
+    segs = pd.DataFrame(
+        {
+            "start_ms": [i * DAY for i in range(90)],
+            "end_ms": [(i + 1) * DAY for i in range(90)],
+            "volatility": np.linspace(0.01, 0.9, 90),
+        }
+    )
     chosen = select_windows(segs, per_tercile=8)
 
     assert len(chosen) == 24
@@ -145,11 +149,13 @@ def test_select_returns_equal_counts_per_regime():
 
 
 def test_selection_is_deterministic():
-    segs = pd.DataFrame({
-        "start_ms": [i * DAY for i in range(90)],
-        "end_ms": [(i + 1) * DAY for i in range(90)],
-        "volatility": np.linspace(0.01, 0.9, 90),
-    })
+    segs = pd.DataFrame(
+        {
+            "start_ms": [i * DAY for i in range(90)],
+            "end_ms": [(i + 1) * DAY for i in range(90)],
+            "volatility": np.linspace(0.01, 0.9, 90),
+        }
+    )
     first = select_windows(segs, per_tercile=8)
     second = select_windows(segs, per_tercile=8)
 
@@ -157,11 +163,13 @@ def test_selection_is_deterministic():
 
 
 def test_low_regime_really_is_the_calmest():
-    segs = pd.DataFrame({
-        "start_ms": [i * DAY for i in range(90)],
-        "end_ms": [(i + 1) * DAY for i in range(90)],
-        "volatility": np.linspace(0.01, 0.9, 90),
-    })
+    segs = pd.DataFrame(
+        {
+            "start_ms": [i * DAY for i in range(90)],
+            "end_ms": [(i + 1) * DAY for i in range(90)],
+            "volatility": np.linspace(0.01, 0.9, 90),
+        }
+    )
     chosen = select_windows(segs, per_tercile=8)
 
     low = chosen.loc[chosen["regime"] == "low", "volatility"].max()
@@ -217,11 +225,13 @@ def daily_segments(df0: pd.DataFrame, df1: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for i in range(0, n, CANDLES_PER_DAY):
         chunk = ratio[i : i + CANDLES_PER_DAY]
-        rows.append({
-            "start_ms": int(starts[i]),
-            "end_ms": int(starts[i]) + DAY_MS,
-            "volatility": realised_volatility(pd.Series(chunk)),
-        })
+        rows.append(
+            {
+                "start_ms": int(starts[i]),
+                "end_ms": int(starts[i]) + DAY_MS,
+                "volatility": realised_volatility(pd.Series(chunk)),
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -292,10 +302,13 @@ from experiments.manifest import build_manifest, matches, write_manifest
 
 def _fields():
     return dict(
-        policy="ABHook", policy_params={"K": 6000, "A": 100},
-        submodules={"v4-core": "d153b04"}, solc="0.8.30",
+        policy="ABHook",
+        policy_params={"K": 6000, "A": 100},
+        submodules={"v4-core": "d153b04"},
+        solc="0.8.30",
         p0_sqrt_price_x96=79228162514264337593543950336,
-        l0_token0=1, l0_token1=2,
+        l0_token0=1,
+        l0_token1=2,
         window={"start_ms": 0, "end_ms": 86_400_000, "regime": "low"},
         arbitrageur={"gas_price_wei": 20_000_000_000, "size_dependent": False},
         input_checksum="abc123",
@@ -494,12 +507,18 @@ def _frame():
     for policy in ("ABHook", "MyHook"):
         for regime in ("low", "mid", "high"):
             for window in range(4):
-                rows.append({
-                    "policy": policy, "fee_pips": 3000, "regime": regime,
-                    "window_start_ms": window, "gas_price_wei": 20_000_000_000,
-                    "net_result": 10.0 if policy == "ABHook" else 8.0,
-                    "retained_volume": 100.0, "trade_count": 5,
-                })
+                rows.append(
+                    {
+                        "policy": policy,
+                        "fee_pips": 3000,
+                        "regime": regime,
+                        "window_start_ms": window,
+                        "gas_price_wei": 20_000_000_000,
+                        "net_result": 10.0 if policy == "ABHook" else 8.0,
+                        "retained_volume": 100.0,
+                        "trade_count": 5,
+                    }
+                )
     return pd.DataFrame(rows)
 
 
@@ -684,12 +703,16 @@ from experiments.figures import frontier, gas_breakeven, net_result_by_regime
 
 def test_each_figure_writes_a_nonempty_pdf(tmp_path, monkeypatch):
     import matplotlib
+
     matplotlib.use("Agg")
 
     from tests.test_aggregate import _frame
 
-    for fn, name in ((net_result_by_regime, "regime"), (frontier, "frontier"),
-                     (gas_breakeven, "gas")):
+    for fn, name in (
+        (net_result_by_regime, "regime"),
+        (frontier, "frontier"),
+        (gas_breakeven, "gas"),
+    ):
         out = tmp_path / f"{name}.pdf"
         fn(_frame(), out)
         assert out.exists() and out.stat().st_size > 0
@@ -778,8 +801,9 @@ GOLDEN = Path("tests/golden/eth-shib-2024-01-01-myhook-3000.json")
 @pytest.mark.slow
 def test_full_window_reproduces_the_golden_result():
     expected = json.loads(GOLDEN.read_text())
-    actual = run_one("MyHook", "ETHUSDT", "SHIBUSDT",
-                     1704067200000, 1704067200000 + 1440 * 60_000)
+    actual = run_one(
+        "MyHook", "ETHUSDT", "SHIBUSDT", 1704067200000, 1704067200000 + 1440 * 60_000
+    )
 
     for key, value in expected.items():
         assert actual[key] == pytest.approx(value, rel=1e-9), f"{key} drifted"

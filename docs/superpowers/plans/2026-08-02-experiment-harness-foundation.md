@@ -388,10 +388,22 @@ class FakeApi:
         last = self.first_ms + (self.count - 1) * MINUTE
         while t <= min(end_ms, last) and len(rows) < limit:
             close = 100.0 + (t - self.first_ms) / MINUTE
-            rows.append([
-                t, "1.0", "1.0", "1.0", str(close), "1.0",
-                t + MINUTE - 1, "1.0", 1, "1.0", "1.0", "0",
-            ])
+            rows.append(
+                [
+                    t,
+                    "1.0",
+                    "1.0",
+                    "1.0",
+                    str(close),
+                    "1.0",
+                    t + MINUTE - 1,
+                    "1.0",
+                    1,
+                    "1.0",
+                    "1.0",
+                    "0",
+                ]
+            )
             t += MINUTE
         return rows
 
@@ -428,8 +440,13 @@ def test_a_narrow_request_is_served_from_a_wide_cache(tmp_path):
     fetch_klines("ETHUSDT", JAN_2024, JAN_2024 + 1440 * 31 * MINUTE, tmp_path, api=api)
     calls_after_prefetch = api.calls
 
-    day = fetch_klines("ETHUSDT", JAN_2024 + 1440 * 5 * MINUTE,
-                       JAN_2024 + 1440 * 6 * MINUTE, tmp_path, api=api)
+    day = fetch_klines(
+        "ETHUSDT",
+        JAN_2024 + 1440 * 5 * MINUTE,
+        JAN_2024 + 1440 * 6 * MINUTE,
+        tmp_path,
+        api=api,
+    )
 
     assert api.calls == calls_after_prefetch, "no network for an already-cached month"
     assert len(day) == 1440
@@ -484,9 +501,18 @@ _BASE_URL = "https://api.binance.com/api/v3/klines"
 # The endpoint returns twelve fields per kline. Naming all of them lets the
 # frame be built without guessing the width.
 KLINE_FIELDS = [
-    "open_time", "open", "high", "low", "close", "volume",
-    "close_time", "quote_volume", "trades",
-    "taker_base", "taker_quote", "ignore",
+    "open_time",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "close_time",
+    "quote_volume",
+    "trades",
+    "taker_base",
+    "taker_quote",
+    "ignore",
 ]
 
 
@@ -533,8 +559,9 @@ def _fetch_range(symbol: str, start_ms: int, end_ms: int, api) -> pd.DataFrame:
         cursor = next_cursor
 
     if not rows:
-        return pd.DataFrame({"open_time": pd.Series(dtype="int64"),
-                             "close": pd.Series(dtype="float64")})
+        return pd.DataFrame(
+            {"open_time": pd.Series(dtype="int64"), "close": pd.Series(dtype="float64")}
+        )
 
     frame = pd.DataFrame(rows, columns=KLINE_FIELDS[: len(rows[0])])
     frame = frame[["open_time", "close"]].copy()
@@ -569,8 +596,9 @@ def fetch_klines(
         parts.append(month)
 
     if not parts:
-        return pd.DataFrame({"open_time": pd.Series(dtype="int64"),
-                             "close": pd.Series(dtype="float64")})
+        return pd.DataFrame(
+            {"open_time": pd.Series(dtype="int64"), "close": pd.Series(dtype="float64")}
+        )
 
     frame = pd.concat(parts, ignore_index=True)
     return (
@@ -1564,13 +1592,22 @@ WAD = 10**18
 
 def _window(**kw):
     base = dict(
-        kind="window", liquidity=10**21, tickLower=-887220, tickUpper=887220,
-        sqrtPriceInitialX96=Q96, sqrtPriceFinalX96=Q96,
-        feeGrowthInside0X128=0, feeGrowthInside1X128=0,
-        initialToken0=10**21, initialToken1=10**21,
-        extPrice0Initial=10**8, extPrice1Initial=10**8,
-        extPrice0Final=10**8, extPrice1Final=10**8,
-        warmupCandles=0, candles=100,
+        kind="window",
+        liquidity=10**21,
+        tickLower=-887220,
+        tickUpper=887220,
+        sqrtPriceInitialX96=Q96,
+        sqrtPriceFinalX96=Q96,
+        feeGrowthInside0X128=0,
+        feeGrowthInside1X128=0,
+        initialToken0=10**21,
+        initialToken1=10**21,
+        extPrice0Initial=10**8,
+        extPrice1Initial=10**8,
+        extPrice0Final=10**8,
+        extPrice1Final=10**8,
+        warmupCandles=0,
+        candles=100,
     )
     base.update(kw)
     return base
@@ -1578,13 +1615,25 @@ def _window(**kw):
 
 def _swap(**kw):
     base = dict(
-        kind="swap", candle=1, blockNumber=1, timestamp=0,
-        extPrice0=10**8, extPrice1=10**8,
-        sqrtPriceBeforeX96=Q96, sqrtPriceAfterX96=Q96,
-        zeroForOne=True, amountIn=WAD, amountOut=9 * 10**17,
-        feePips=3000, feeAB=3000, feeBA=3000,
-        delta0=-WAD, delta1=9 * 10**17, expectedProfit=10**15,
-        gas=150000, sender="0x00000000000000000000000000000000000BeEF0",
+        kind="swap",
+        candle=1,
+        blockNumber=1,
+        timestamp=0,
+        extPrice0=10**8,
+        extPrice1=10**8,
+        sqrtPriceBeforeX96=Q96,
+        sqrtPriceAfterX96=Q96,
+        zeroForOne=True,
+        amountIn=WAD,
+        amountOut=9 * 10**17,
+        feePips=3000,
+        feeAB=3000,
+        feeBA=3000,
+        delta0=-WAD,
+        delta1=9 * 10**17,
+        expectedProfit=10**15,
+        gas=150000,
+        sender="0x00000000000000000000000000000000000BeEF0",
     )
     base.update(kw)
     return base
@@ -1615,7 +1664,9 @@ def test_reader_preserves_large_integers_exactly(tmp_path):
 
 def test_conservation_closes_when_the_two_sides_agree(tmp_path):
     """A swap that moves no price and pays no fee leaves the pool unchanged."""
-    path = _write(tmp_path, [_swap(delta0=0, delta1=0, amountIn=0, feePips=0), _window()])
+    path = _write(
+        tmp_path, [_swap(delta0=0, delta1=0, amountIn=0, feePips=0), _window()]
+    )
     swaps, window = read_events(path)
     m = compute(swaps, window, gas_price_wei=20e9)
 
@@ -1649,7 +1700,9 @@ def test_fees_are_absent_from_the_position_principal(tmp_path):
     growth changes. If principal responded, fees would be counted twice."""
     no_fees = _write(tmp_path, [_window(feeGrowthInside0X128=0)])
     with_fees = tmp_path / "b.jsonl"
-    with_fees.write_text(json.dumps(_window(feeGrowthInside0X128=(2**128) // 1000)) + "\n")
+    with_fees.write_text(
+        json.dumps(_window(feeGrowthInside0X128=(2**128) // 1000)) + "\n"
+    )
 
     a = compute(*read_events(no_fees), gas_price_wei=20e9)
     b = compute(*read_events(with_fees), gas_price_wei=20e9)
@@ -1723,9 +1776,22 @@ from pathlib import Path
 import pandas as pd
 
 SWAP_INT_COLUMNS = [
-    "candle", "blockNumber", "timestamp", "extPrice0", "extPrice1",
-    "sqrtPriceBeforeX96", "sqrtPriceAfterX96", "amountIn", "amountOut",
-    "feePips", "feeAB", "feeBA", "delta0", "delta1", "expectedProfit", "gas",
+    "candle",
+    "blockNumber",
+    "timestamp",
+    "extPrice0",
+    "extPrice1",
+    "sqrtPriceBeforeX96",
+    "sqrtPriceAfterX96",
+    "amountIn",
+    "amountOut",
+    "feePips",
+    "feeAB",
+    "feeBA",
+    "delta0",
+    "delta1",
+    "expectedProfit",
+    "gas",
 ]
 
 
@@ -1814,8 +1880,10 @@ def compute(swaps: pd.DataFrame, window: dict, gas_price_wei: float) -> dict:
     final_p1 = float(window["extPrice1Final"])
 
     principal0, principal1 = amounts_for_liquidity(
-        liquidity, int(window["sqrtPriceFinalX96"]),
-        int(window["tickLower"]), int(window["tickUpper"]),
+        liquidity,
+        int(window["sqrtPriceFinalX96"]),
+        int(window["tickLower"]),
+        int(window["tickUpper"]),
     )
 
     # Fees live outside the position principal in v4.
@@ -1833,9 +1901,9 @@ def compute(swaps: pd.DataFrame, window: dict, gas_price_wei: float) -> dict:
         flow0 = float(swaps["delta0"].sum())
         flow1 = float(swaps["delta1"].sum())
         gas_units = float(swaps["gas"].sum())
-        retained = _usd(float(swaps.loc[swaps["zeroForOne"], "amountIn"].sum()), final_p0) + _usd(
-            float(swaps.loc[~swaps["zeroForOne"], "amountIn"].sum()), final_p1
-        )
+        retained = _usd(
+            float(swaps.loc[swaps["zeroForOne"], "amountIn"].sum()), final_p0
+        ) + _usd(float(swaps.loc[~swaps["zeroForOne"], "amountIn"].sum()), final_p1)
 
     # Independent derivations of the pool's token holdings.
     conservation_error_token0 = (principal0 + fee0) - (l0_0 - flow0)
@@ -1970,8 +2038,9 @@ def align_traces(*frames: pd.DataFrame) -> tuple[pd.DataFrame, ...]:
     Binance occasionally omits a minute for one symbol and not another. Zipping
     the frames positionally would silently pair mismatched prices from then on.
     """
-    shared = reduce(lambda a, b: a.intersection(b),
-                    (pd.Index(f["open_time"]) for f in frames))
+    shared = reduce(
+        lambda a, b: a.intersection(b), (pd.Index(f["open_time"]) for f in frames)
+    )
     if len(shared) == 0:
         raise ValueError("traces share no timestamps")
     shared = shared.sort_values()
@@ -2036,7 +2105,14 @@ def run_one(
     out = results / name
 
     subprocess.run(
-        ["forge", "test", "--match-test", "testReplay", "--match-path", "test/Replay.t.sol"],
+        [
+            "forge",
+            "test",
+            "--match-test",
+            "testReplay",
+            "--match-path",
+            "test/Replay.t.sol",
+        ],
         cwd=ROOT / "contracts",
         check=True,
         env={

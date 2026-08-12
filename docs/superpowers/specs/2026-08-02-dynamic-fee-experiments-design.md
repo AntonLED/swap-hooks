@@ -104,9 +104,19 @@ This is the only model that requires justification.
 
 Entry condition:
 
-$$\Pi(\Delta) - \text{fee}(\Delta) - \text{gas} > 0$$
+$$\Pi^{*}(\Delta) - \text{gas} > 0$$
 
 where $\Delta$ is the trade size. The size is derived in Appendix A.
+
+> **Corrected 2026-08-10 (D8).** This line previously read
+> $\Pi(\Delta) - \text{fee}(\Delta) - \text{gas} > 0$, which subtracts the fee
+> twice: $\Pi^{*}$ as derived in §A.2–§A.4 already has the fee inside it through
+> $\gamma = 1 - f$, since only $\gamma\Delta x$ reaches the invariant. §A.4's
+> "execution requires $\Pi^{*} >$ gas cost" was always the correct statement and
+> is what the harness implements — `contracts/test/Replay.t.sol:399` gates on
+> `expected <= _gasCostInToken1(candle)`, with `expected` returned by
+> `ArbMath.profit`. No executed run was affected; only this sentence was wrong,
+> and it is the one a reader meets first.
 
 The size is chosen **optimally** — trading up to the point where the marginal
 unit of volume stops being profitable. For a constant-product pool whose fee
@@ -141,8 +151,19 @@ across all runs: **20,000,000 USDT**, split equally by value between the two
 tokens at window start.
 
 The figure was set empirically on 2026-08-03. Arbitrage profit scales as
-`V·ε²/4`, so a shallow pool needs a large price deviation before a trade clears
-its gas cost. Measured over 1 Jan 2024 on ETH/SHIB at 30 bps, one day yields:
+`y·ε²/4`, where `y` is the **quote-side reserve** — half the basket — so in
+basket terms `V·ε²/8`. A shallow pool therefore needs a large price deviation
+before a trade clears its gas cost.
+
+> **Corrected 2026-08-10 (U5).** This read `V·ε²/4` with `V` the basket, a
+> factor of 2 too large. From §A.5's `Π* = L(s−t)²/s`, the small-deviation limit
+> is `y·ε²/4`; §4.3 discusses 1M vs 20M **baskets**, so the substitution
+> `y = V/2` has to be made explicit. The empirical table below is a measurement
+> and is unaffected; only the scaling law quoted beside it was wrong. The same
+> `y·ε²/4` form is used correctly (with `y` = 10M against a 20M basket) in
+> `2026-08-10-kappa-sensitivity-preregistration.md`.
+
+Measured over 1 Jan 2024 on ETH/SHIB at 30 bps, one day yields:
 
 | Basket | 5 gwei | 20 gwei | 80 gwei |
 | ------ | ------ | ------- | ------- |
@@ -186,15 +207,15 @@ allocated across directions.
 
 ## 5. Policies Under Test
 
-| Policy                 | Signal                                        | Role                |
-| ---------------------- | --------------------------------------------- | ------------------- |
-| `MyHook` × 4 levels    | constant                                      | baseline            |
-| `BAHook`               | sign of external ratio change, once per block | naive               |
-| `DAHook`               | direction of the previous trade               | naive, oracle-free  |
-| `ABHook`               | pool price change, constant fee sum           | reallocation        |
-| `PegStabilityHook`     | pool deviation from the external price        | capture (κ=1)       |
-| `MEVChargeHook`        | per-address history, trade size               | behavioural         |
-| `VolatilityHook` (new) | EMA + Welford variance                        | volatility-adaptive |
+| Policy                 | Signal                                        | Role                           |
+| ---------------------- | --------------------------------------------- | ------------------------------ |
+| `MyHook` × 4 levels    | constant                                      | baseline                       |
+| `BAHook`               | sign of external ratio change, once per block | naive                          |
+| `DAHook`               | direction of the previous trade               | naive, oracle-free             |
+| `ABHook`               | pool price change, constant fee sum           | reallocation                   |
+| `PegStabilityHook`     | pool deviation from the external price        | capture (`captureShare` = 0.5) |
+| `MEVChargeHook`        | per-address history, trade size               | behavioural                    |
+| `VolatilityHook` (new) | EMA + Welford variance                        | volatility-adaptive            |
 
 `PegStabilityHook` is run in **both** available readings, as two configurations:
 
@@ -212,6 +233,38 @@ assumption, which matters because the two differ in mechanism, not in
 parameters.
 
 Eleven configurations in total.
+
+> **Corrected 2026-08-10 (E3).** The `PegStabilityHook` row read "capture
+> (κ=1)". No run ever used 1. The contract's configured value is
+> `captureShare = 500_000` = **0.5** (`contracts/src/PegStabilityHook.sol:70`),
+> and κ = 1 is provably inert: the proof at lines 59–68 shows it makes the
+> no-arbitrage band exactly contain the pool price, so the arbitrageur is left
+> nothing and never trades — measured as zero trades under every gas price and
+> pool depth. The symbol was also changed from κ to `captureShare` because the
+> UU documents use κ for the retail-volume scale; two different κ in one paper,
+> one of them in a document titled "the κ sensitivity sweep", is a collision the
+> paper must not inherit. Note what this exposes: `captureShare` is the single
+> most decisive parameter in `PegCapture` — the 2026-08-03 sweep found it flips
+> the sign of the result (at 0.10 the policy significantly loses in every
+> regime, at 0.75 it significantly wins) — and
+> `2026-08-04-power-extension-preregistration.md` pins it only **by reference**
+> ("`captureShare` stays at its single configured value"), never by value. That
+> pre-registration is frozen and is not edited; the paper must state the value
+> that ran and note that 0.5 is the _weakest_ winning setting, so the choice is
+> conservative rather than favourable.
+
+> **Amended 2026-08-10 (C2).** "Eleven configurations" is left as written
+> because the 2026-08-04 pre-registration's family count derives from it. A
+> **twelfth**, `MEVChargeHookFixed`, was added on 2026-08-03 and is what
+> `2026-08-09-uu-flow-design.md` §8 and the UU pre-registration mean by "12
+> policies". It is a corrected variant authored here, not part of the evaluated
+> artifact: it overrides `_impactRatioBps` to divide by the reserve of the token
+> actually paid in, which is a policy-logic change and therefore an exception to
+> §13's discipline. The exception is defensible — it repairs a dimensional
+> error, and the shipped template runs unchanged beside it — but it was never
+> amended into this document, and the paper must say plainly that the variant is
+> ours. §9's run-matrix arithmetic is left at eleven for the same reason and is
+> superseded by the UU design §8.
 
 ## 6. New Hook: `VolatilityHook`
 
@@ -287,8 +340,15 @@ manual choice:
    (every `k`-th when sorted by date) → **24 windows per pair**.
 
 A **tercile** is the same idea as a quartile, but splitting into three parts:
-all 365 daily segments are sorted by volatility and cut into three equally sized
+all 366 daily segments are sorted by volatility and cut into three equally sized
 groups — the calmest third, the middle third, and the stormiest third.
+
+> **Corrected 2026-08-10 (C7).** This said 365. 2024 is a leap year, so there
+> are 366 daily segments and 122 per tercile exactly — which is the number the
+> 2026-08-04 pre-registration uses ("122 days available per tercile") and what
+> the code reports. The count of windows drawn per tercile is separately
+> superseded: this section says 8 (24 per pair), the 2026-08-04
+> pre-registration raised it to 24 (72 per pair), and that document governs.
 
 Why stratify rather than take 24 random days: calm days typically outnumber
 volatile ones, so a random sample would likely be predominantly calm and we
@@ -433,6 +493,22 @@ be recomputed at a different time without re-running.
 Arbitrageur profit matters more than it appears: in an arbitrage-only world,
 what the LP loses someone else receives, which closes the balance.
 
+> **Superseded 2026-08-10 (C5), noted so nobody flags it as a silent
+> reopening.** "The valuation time, which is the end of the window" is no longer
+> the only valuation. `2026-08-09-uu-flow-design.md` §6 declares a **second,
+> co-primary** valuation at trade-time prices, and the 2026-08-09
+> pre-registration declares it before the data with its post-hoc motivation
+> disclosed. That is a superseding amendment done correctly. The two are
+> different functionals, not one quantity under two valuations — see the §6
+> amendment for the algebra and the naming.
+
+> **§12.1 below is a PRE-REGISTRATION and is FROZEN.** Data exists for it; it is
+> not edited, including where it is wrong. The 2026-08-10 review found two
+> arithmetic errors in its Bonferroni justification (the family size and the
+> number of windows per comparison) whose stated conclusion nevertheless
+> survives. Both are recorded, with the corrected values, as items 7–8 of the
+> disclosure list in `2026-08-09-uu-flow-design.md` §12.
+
 ### 12.1 Pre-Registered Analysis Plan
 
 Recorded 2026-08-02, before any run. Pre-registration only counts when it
@@ -495,15 +571,67 @@ Each fix is a separate commit referencing either a line of the paper or a
 reproducing test. The paper gains a paragraph on divergences from the original
 artifact.
 
+### 13.1 Fee-Unit Names That Lie — Documented, Deliberately Not Renamed
+
+Added 2026-08-10. Fee units are the named hazard of this project (§4.5), and two
+identifiers in the shipped hooks are wrong about them. **In both cases the
+values are correct and every use is correct**; only the names and one comment
+mislead. They are recorded here rather than repaired, because the artifact the
+paper exports for readers is the shipped source and a reader will read the name
+before the value.
+
+| Where                        | Text                                                            | The truth                                                                                    |
+| ---------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `PegStabilityHook.sol:72-73` | `uint24 public MAX_FEE_BPS = 10000;` / `MIN_FEE_BPS = 100;`      | These hold **pips**, not bps: 10000 pips = 100 bps = §4.5's ceiling, 100 pips = 1 bp = its floor |
+| `DAHook.sol:24`              | `uint24 private FSTEP = 100; // 5 bps, 0.01%`                    | 100 pips is **1 bp**. The "5 bps" is wrong and has been since 2026-08-03. `BAHook.sol:35`'s `FSTEP = 500; // 5 bps` is correct |
+
+- **The `_BPS` names are not renamed** because they are `public`, so renaming
+  them changes the ABI, and the run manifest and the bound tests read them from
+  outside. The percent comments beside them (`1%`, `0.01%`) are correct and are
+  the reliable reading. The hazard is sharpened by the fact that in this same
+  repository `MEVChargeHook.config.feeMax` genuinely **is** in bps: two fields
+  whose names differ by one word and whose units differ by 100×.
+- **`DAHook.FSTEP`'s comment** costs nothing numerically — the constant is used
+  as pips throughout — but it is a fee-unit comment in exported source, and it
+  is the third occurrence of this class of error in the project (the first being
+  Fig. 5's axis, §15). Correcting the comment is safe whenever the matrix is not
+  running; it is left alone for now because no source file may be touched while
+  a run is in flight.
+
 ## 14. Verification
 
 ### 14.1 Balance Closure — the Primary Invariant
 
 ```
-LP loss  =  arbitrageur profit  +  gas  −  LP fees
+LP loss  =  arbitrageur profit net of gas  +  gas
 ```
 
-$$\underbrace{IL - R_f}_{\text{LP loss}} \;=\; \underbrace{\Pi_{\text{arb}} + G}_{\text{extracted}} \;-\; R_f$$
+$$\underbrace{IL - R_f}_{\text{LP loss}} \;=\; \underbrace{\Pi_{\text{arb}}^{\text{net}}}_{\text{kept by the arbitrageur}} \;+\; \underbrace{G}_{\text{burnt}}$$
+
+Read it as a closed system from which gas leaves. Writing
+$\Delta_{\text{LP}} = R_f - IL$ for the LP's change in value and
+$\Delta_{\text{arb}} = \Pi_{\text{arb}}^{\text{net}}$ for the arbitrageur's
+profit **after** paying gas,
+
+$$\Delta_{\text{LP}} + \Delta_{\text{arb}} + G = 0
+\qquad\Longrightarrow\qquad
+IL - R_f = \Pi_{\text{arb}}^{\text{net}} + G$$
+
+The LP's fee income $R_f$ appears once, on the left, inside the definition of LP
+loss. It is not subtracted again on the right.
+
+> **Corrected 2026-08-10 (D7).** The identity previously printed was
+> `IL − R_f = (Π_arb + G) − R_f`, with the prose "LP loss = arbitrageur profit +
+> gas − LP fees". That bracketed form cancels `R_f` on both sides and reduces to
+> `IL = Π_arb + G`, so the prose's "− LP fees" did nothing, and neither reading
+> holds under either sign convention used elsewhere in this document: with
+> `Π_arb` net of the fee (the §A.4 convention, where the fee is inside `Π*` via
+> γ) the identity is off by `G`; with `Π_arb` gross of fee and gas (the old §4.2
+> convention) it is off by `R_f`. The implementation was never wrong —
+> conservation closes at 1e-16 — so no number moves. This section says "This is
+> the only substantive invariant" and is the equation most likely to be typeset
+> into the methodology as-is, which is why it is corrected in place rather than
+> annotated.
 
 If it closes to within rounding, the metrics are right. If it does not, there is
 an error. This catches a mixed-up numeraire, a dropped factor, a wrong-sided
@@ -651,24 +779,51 @@ square-root price $s = \sqrt{p}$:
 
 $$x = \frac{L}{s}, \qquad y = L\,s, \qquad x y = L^{2}$$
 
-Writing the target square-root price as $t = \sqrt{P/\gamma}$:
+**Selling token0** ($s > t$), with target square-root price
+$t = \sqrt{P/\gamma}$:
 
 $$\gamma\,\Delta x^{*} \;=\; L\left(\frac{1}{t} - \frac{1}{s}\right)
 \qquad\qquad
-\Pi^{*} \;=\; \frac{L\,(s - t)^{2}}{s}$$
+\Pi^{*}_{0\to1} \;=\; \frac{L\,(s - t)^{2}}{s}$$
+
+**Buying token0** ($s < t$) is _not_ the mirror image. Its target is
+$t = \sqrt{P\gamma}$ and §A.4's $\Pi^{*}_{1\to0} = (\sqrt{Px} - \sqrt{y/\gamma})^{2}$
+maps, in the same coordinates, to
+
+$$\Pi^{*}_{1\to0} \;=\; \frac{L\,(t - s)^{2}}{\gamma\,s}$$
+
+— larger by $1/\gamma$. The fee is paid in token1, which is the token the profit
+is denominated in, so nothing cancels; on the sell side the fee is paid in
+token0 and the grossing-up cancels against that input's external valuation.
+**Both branches are needed. One formula does not cover both.**
 
 The quantity $L(1/t - 1/s)$ is exactly `getAmount0Delta(t, s, L)`, Uniswap's
 standard amount for moving between two square-root prices. The whole computation
 therefore reduces to:
 
 1. read the current $s$ from `slot0`;
-2. compute $t = \sqrt{P/\gamma}$;
-3. if $s > t$, take the standard `getAmount0Delta(t, s, L)`;
+2. compute $t = \sqrt{P/\gamma}$ when selling token0, $t = \sqrt{P\gamma}$ when
+   buying it;
+3. take the standard `getAmount0Delta(t, s, L)` (resp. `getAmount1Delta`);
 4. gross up by $1/\gamma$, because v4 deducts the fee from the input before the
-   swap math.
+   swap math;
+5. apply the branch's own profit formula — the extra $1/\gamma$ on the buy side
+   is **not** optional.
 
 No bespoke swap arithmetic is needed. This is what `ArbMath.targetSqrtPriceX96`
 and `ArbMath.grossInput` implement.
+
+> **Corrected 2026-08-10 (D9).** This section previously gave one formula,
+> $\Pi^{*} = L(s-t)^{2}/s$, and concluded "the whole computation therefore
+> reduces to…" as though it covered both directions. It is the token0-**sell**
+> branch only. The omission produced a real bug: the 2026-08-03 audit found
+> `ArbMath.profit` applying the sell-side form to both directions, which
+> understated buy-side profit by exactly γ and suppressed 23 of 80,243 buys
+> whose true profit fell in `[gas, gas/γ]`. The code has been correct since —
+> `contracts/src/libraries/ArbMath.sol:96` applies
+> `ONE_PIPS/(ONE_PIPS − feePips)` on the buy branch, with the asymmetry
+> documented in its NatSpec — but this document did not, and it is the single
+> most copy-pasted formula in it.
 
 ### A.6 Why a Dynamic Fee Changes Nothing Structurally
 
@@ -750,16 +905,67 @@ f_{\text{static}} + (f_{\max}^{\text{mal}} - f_{\text{static}})\dfrac{\text{impa
 Below 5% of liquidity the fee is size-independent and the closed form remains
 exact. Above it, the size must be found numerically.
 
+**The applied fee is not that piecewise expression.** The branch above is
+`_calculateImpactFee` read alone, and read alone it appears to jump
+_downward_ at $\Delta x = 0.05L$ whenever $f_{\text{time}} > f_{\text{static}}$
+— i.e. whenever the 15-second cooldown is active, which for a persistent address
+is nearly always. What the pool charges is the call site
+(`contracts/src/MEVChargeHook.sol:403-406`):
+
+$$f(\Delta x) \;=\; \min\!\big(\,\max(f_{\text{impact}}(\Delta x),\; f_{\text{time}}),\; \text{cap}\,\big)$$
+
+and $f_{\text{impact}}$ **starts at exactly $f_{\text{static}}$** at the trigger,
+with $f_{\text{static}} \le f_{\text{time}}$ always ( `_calculateTimeFee`
+returns $f_{\text{static}}$ or $f_{\text{static}}$ plus a non-negative ramp). So
+the maximum is $f_{\text{time}}$ on both sides of the boundary: the applied fee
+is **continuous, and non-decreasing in size** — constant at $f_{\text{time}}$,
+then rising linearly once the impact term overtakes it, then flat at the cap.
+
 **Treatment.** The harness uses the closed form as the default path and switches
 to a ternary search maximising $\Pi(\Delta x)$ directly whenever a policy is
-declared size-dependent. Two implementation constraints follow:
+declared size-dependent. Three implementation constraints follow:
 
-- The search range is $[0,\ \Delta x^{*}(f_{\min})]$, since a larger fee only
-  ever reduces the optimal size. $\Pi$ stays unimodal because an
-  increasing $f(\Delta x)$ only makes it more concave.
+- **Unimodality is checked, not argued.**
+  `contracts/test/SizeSearchUnimodal.t.sol` samples $\Pi$ on a 400-point grid
+  over the real shape above — including the `max` and the cap, not a smooth
+  stand-in — swept across the cooldown ramp at $f_{\text{time}} \in$ {3000,
+  6000, 10000} pips, and asserts a single turning point. It passes. This is the
+  evidence for the ternary search's validity; the previous sentence ("$\Pi$
+  stays unimodal because an increasing $f(\Delta x)$ only makes it more
+  concave") asserted the conclusion without showing it.
+- The search range is $[0,\ \Delta x^{*}(f_{\min})]$. This requires that a
+  larger fee reduce the optimal size, which holds **only while
+  $\gamma p < 4P$**: differentiating $\Delta x^{*} = A\gamma^{-1/2} - x/\gamma$
+  with $A = \sqrt{xy/P}$ gives $d\Delta x^{*}/d\gamma > 0 \iff x' < 2x \iff
+  \gamma y/x < 4P$. That is a deviation of the pool from the external price by a
+  factor of four; it is satisfied by every deviation observed in this
+  experiment, but it is a condition, not a fact.
 - `MEVChargeHook._getFee` **writes state** (`_lastBuyToken0/1[payer]`), so
   probing it repeatedly would corrupt the very history the fee depends on. Each
   probe must therefore be wrapped in `vm.snapshotState()` / `vm.revertToState()`.
+
+**One residual discontinuity, and why it is not load-bearing.**
+`_computeDynamicFee` returns a zero surcharge when the truncated
+$\text{impactBps} = \Delta x \cdot 10^{4}/L$ evaluates to 0, i.e. for
+$\Delta x < 10^{-4}L$. Crossing that threshold steps the fee _up_ from
+$f_{\text{static}}$ to $f_{\text{time}}$, which is a downward step in $\Pi$ and
+therefore a genuine local maximum at $\Delta x \approx 10^{-4}L$. It cannot be
+the search's answer in this experiment: a trade of $10^{-4}L$ on a 20M basket
+earns profit orders of magnitude below the gas floor at every gas scenario, so
+the bracketing never encloses it as an optimum that clears entry. It is recorded
+here so nobody rediscovers it as a defect — and it should be re-checked if the
+basket or the gas axis ever moves.
+
+> **Corrected 2026-08-10 (D10).** The 2026-08-10 specification review concluded
+> that the applied fee jumps downward at the 500 bps trigger, that this creates
+> a second local maximum, and that arbitrage pressure against `MEVChargeHook`
+> may therefore be understated. **That conclusion is wrong**, for the reason set
+> out above: the review read `_calculateImpactFee` without its call site, and
+> the `max(impactFee, timeFee)` there removes the jump. Verified numerically and
+> now exercised by `SizeSearchUnimodal.t.sol` across the cooldown ramp. The
+> review's _premise_ was right and is what this section had wrong — the
+> unimodality claim was asserted rather than shown, and the search-range claim
+> was stated as a fact when it is a condition. Both are now stated properly.
 
 Size dependence is declared per policy in the run configuration rather than
 detected at runtime, so the fast path stays the default and the choice is
