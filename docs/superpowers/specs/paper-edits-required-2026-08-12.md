@@ -253,7 +253,7 @@ unconditionally, and localises where and for whom adaptation does pay."
 | `uu_volume_profile.pdf` | measured intraday demand shape | Methodology |
 | `uu_effect_sizes.pdf` | headline CIs at κ=1 | Results (alt. to table) |
 | `uu_regime_gas_grid_rel.pdf`, `uu_t01_*` | robustness views | appendix |
-| `fee_detail_{AB,BA,DA,MEVCharge}Hook.pdf` | per-policy fee behaviour (arb-only exp.) | appendix |
+| `uu_fee_distribution.pdf` | what each policy actually charged | appendix |
 | `dynamic_fee_reaction.pdf` | mechanism illustration (kept from v1) | Framework section |
 
 Reproducibility line for the artifact statement: every figure is drawn
