@@ -1,0 +1,19 @@
+policy,gas_units,gas_price_gwei,usd_per_swap,bps_of_reference_trade
+MyHook@3000 (static),76268,5,1.161,2.9
+MyHook@3000 (static),76268,20,4.643,11.6
+MyHook@3000 (static),76268,80,18.573,46.4
+DAHook,87970,5,1.339,3.3
+DAHook,87970,20,5.356,13.4
+DAHook,87970,80,21.422,53.6
+ABHook,93842,5,1.428,3.6
+ABHook,93842,20,5.713,14.3
+ABHook,93842,80,22.852,57.1
+MEVChargeHook,94739,5,1.442,3.6
+MEVChargeHook,94739,20,5.768,14.4
+MEVChargeHook,94739,80,23.071,57.7
+BAHook,107847,5,1.641,4.1
+BAHook,107847,20,6.566,16.4
+BAHook,107847,80,26.263,65.7
+VolatilityHook,123476,5,1.879,4.7
+VolatilityHook,123476,20,7.517,18.8
+VolatilityHook,123476,80,30.069,75.2

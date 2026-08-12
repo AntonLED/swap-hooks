@@ -1,0 +1,9 @@
+policy,median,ci_low,ci_high,strata,strata_positive,ci_excludes_zero,configuration,subtitle
+MyHook@6000,200.37522911555584,31.485711378558364,640.0759491375943,18,15,True,κ = 0.1,static 30 bps baseline: -846 USDT per window (mean)
+MyHook@10000,105.05144967718911,-66.87957243668097,289.9767296219918,18,12,False,κ = 0.1,static 30 bps baseline: -846 USDT per window (mean)
+VolatilityHook,-6.773668185371065,-62.82810551626852,64.86137615032726,18,8,False,κ = 0.1,static 30 bps baseline: -846 USDT per window (mean)
+DAHook,-48.22170654157229,-70.38421599878919,-10.075526028769815,18,4,True,κ = 0.1,static 30 bps baseline: -846 USDT per window (mean)
+BAHook,-50.37516112528368,-88.56694340253756,46.11720832376443,18,6,False,κ = 0.1,static 30 bps baseline: -846 USDT per window (mean)
+MEVChargeHook,-67.71307328816928,-130.92217552565504,67.29057393887649,18,7,False,κ = 0.1,static 30 bps baseline: -846 USDT per window (mean)
+ABHook,-76.84038787248113,-125.74826794550654,-55.96493554605371,18,0,True,κ = 0.1,static 30 bps baseline: -846 USDT per window (mean)
+MyHook@500,-1011.6695485033576,-2425.121621165264,-727.5180834518787,18,0,True,κ = 0.1,static 30 bps baseline: -846 USDT per window (mean)
