@@ -1,0 +1,20 @@
+{
+  "arb_mtm": -284.7673525695027,
+  "arb_profit_realized": 36.66406697654419,
+  "arb_volume": 84948.36572620005,
+  "conservation_error_token0": -1.196530073600001e-16,
+  "conservation_error_token1": 0.0,
+  "fee_income": 261.5656299422044,
+  "gas_cost": 31.415492668000002,
+  "hodl_value": 20624861.086238924,
+  "il": -23.201722625643015,
+  "lp_principal": 20624884.28796155,
+  "lp_value": 20625145.85359149,
+  "net_result": 284.7673525678474,
+  "net_result_tt": -67.30935273354419,
+  "retained_volume": 87188.54331406814,
+  "trade_count": 11,
+  "uu_fee_share": 0.0,
+  "uu_participation": null,
+  "uu_volume": 0.0
+}
