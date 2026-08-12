@@ -1,0 +1,42 @@
+[profile.default]
+# A full replay drives thousands of swaps inside one test, so the default limit
+# is too low. This is NOT a licence to remove the bound: the gas limit is the
+# only thing that stops a runaway test allocating until the machine dies, which
+# is exactly what happened when it was set to u64 max. Measured worst case is
+# 2.46e9 (MEVChargeHook with the size search); this leaves 8x headroom.
+gas_limit = 20000000000
+evm_version = "cancun"
+ffi = true
+fs_permissions = [
+    {access = "read-write", path = ".forge-snapshots/"},
+    {access = "read-write", path = "../results/"},
+    # The UU experiment's event traces. This is a path allowlist, so threading
+    # a `results_dir` through the runner is only half the fix: without an entry
+    # here the harness cannot write there at all, and the silent fallback to
+    # `../results/` is exactly how the UU matrix came to overwrite the arb-only
+    # traces under byte-identical filenames.
+    {access = "read-write", path = "../results-uu/"},
+    {access = "read", path = "../data/"},
+    {access = "read", path = "./"},
+    # Parallel workers each write their traces to their own directory here.
+    {access = "read-write", path = "../.work/"},
+]
+libs = ["lib"]
+out = "out"
+solc_version = "0.8.30"
+src = "src"
+via_ir = true
+bytecode_hash = "none"
+cbor_metadata = false
+
+[lint]
+exclude_lints = ["screaming-snake-case-immutable", "screaming-snake-case-const"]
+[fmt]
+# Pinned rather than left to forge's defaults: the formatter is part of how the
+# sources are read, and a toolchain upgrade should not silently rewrap them.
+# 120 rather than the 80 the old .prettierrc asked for -- 80 rewraps 344 lines
+# of otherwise untouched code, and Solidity's type names do not fit it.
+line_length = 120
+tab_width = 4
+quote_style = "double"
+bracket_spacing = false
