@@ -295,12 +295,15 @@ size. $\kappa = 1$: an average day wants to push one pool's worth (20M
 USDT, ≈ 13.9k per average minute) through the pool. $\kappa = 0.1$: a
 tenth of that. Every "κ = …" label in this document is this number.
 
-_(Implementation note: the code carries the same quantity in two
-factors — a per-pair normalising constant `kappa_for_pair` that absorbs
-the raw Binance level, ≈ 0.0552 for ETH/SHIB, and the operating-point
-multiplier `uu_turnover`. The constant is pure bookkeeping with no
-independent meaning; only the product matters, and κ in this document
-is the `uu_turnover` factor.)_
+_(Implementation note: the code groups the same product differently:
+$v_0(c) = (\kappa \cdot n_p) \cdot V_{\text{profile}}(c)$, where
+$n_p = \text{basket} \,/\, \overline{\sum_{\text{day}} V_{\text{profile}}}$
+is a per-pair normalisation constant ($n_p \approx 0.0552$ for
+ETH/SHIB). Substituting $n_p$ shows the two forms are identical:
+$n_p \cdot V_{\text{profile}}(c) = \text{basket} \cdot \hat{s}(c)$.
+$n_p$ is pure bookkeeping with no independent meaning; the $\kappa$ of
+this document is the dimensionless factor beside it. In the code the two
+are `kappa_for_pair` and `uu_turnover`.)_
 
 The measured shape itself is drawn in
 `paper/Image/uu_volume_profile.pdf` — the quiet Asian night, the
