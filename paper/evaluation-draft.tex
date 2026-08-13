@@ -109,9 +109,19 @@ transaction cost. ($\lambda$ is a stated assumption and is varied in
   sensitivity analysis; at our trade sizes the uncalibrated
 $e^{-|r|}$ is insensitive to any fee in the box.)
 
-Each minute, each direction independently draws one candidate trade of
-lognormal size (mean-preserving, $\sigma=1$) around its share of the
-minute's demand and executes it all-or-nothing with probability
+Each minute $c$, each direction independently draws one candidate trade
+of size
+\begin{equation}
+  q(c)=\frac{v_0(c)}{2}\;e^{\sigma Z-\sigma^{2}/2},
+  \qquad Z\sim\mathcal{N}(0,1),\ \ \sigma=1,
+  \label{eq:uu-size}
+\end{equation}
+where $v_0(c)$ is the minute's potential demand
+(Eq.~\eqref{eq:uu-demand} below), split equally between the two
+directions. The lognormal multiplier is mean-preserving
+($\mathbb{E}[e^{\sigma Z-\sigma^{2}/2}]=1$), so randomness produces
+realistic heavy-tailed trade sizes without distorting the calibrated
+volume; the trade then executes all-or-nothing with probability
 $P_{\mathrm{exec}}$. Discreteness is essential: it displaces the pool
 (giving the arbitrageur work), gives each trade a definite gas bill, and
 keeps randomness reproducible --- all draws are pre-generated from a
