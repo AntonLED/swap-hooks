@@ -365,7 +365,105 @@ and is reported as observed structure; the unconditional findings and
 the failed-and-reported gas prediction follow the pre-registered
 protocol.
 
-\appendix[Derivation of the Arbitrage Optimum]
+\appendices
+
+\section{Evaluated Policies in Detail}
+\label{app:policies}
+
+All policies share the fee box $[1,100]$~bps (fees are \texttt{uint24}
+values in hundredths of a basis point) and the same harness path;
+``measured gas'' is the EVM-measured median per swap including the 21k
+intrinsic transaction cost. Directional fees are written
+$f^{0\to1}$ (selling token0) and $f^{1\to0}$; all start at 30~bps
+unless noted.
+
+\subsection{Static baselines (\texttt{MyHook})}
+A constant fee $f\in\{5,30,60,100\}$~bps, identical in both directions,
+never updated. Measured gas: 76--77k. These anchor every comparison:
+30~bps is the pre-declared baseline, and the four levels trace the
+static fee curve whose interior optimum the model predicts at
+$2/\lambda$.
+
+\subsection{\texttt{DAHook} --- deal-adaptive directional ratchet}
+Endogenous (no oracle; its feed arguments are unused). After every
+executed swap in direction $d$,
+\begin{equation}
+  f^{d}\leftarrow f^{d}+\delta,\qquad
+  f^{-d}\leftarrow f^{-d}-\delta,\qquad \delta=1~\mathrm{bps},
+  \label{eq:dahook}
+\end{equation}
+each side clamped to the box. The hook prices \emph{realized flow
+direction}: sustained one-sided flow makes that direction progressively
+dearer and the return path cheaper --- a micro market-maker skewing its
+quotes. Update granularity: every trade. Measured gas: 88k (the
+cheapest hook). In Fig.~\ref{fig:fee-response} its two series diverge
+smoothly as the downtrend produces persistent directional flow.
+
+\subsection{\texttt{BAHook} --- block-adaptive oracle ratchet}
+Oracle-driven: two Chainlink-compatible feeds give the external ratio
+$\rho_b=p_{0,b}/p_{1,b}$. At most once per block,
+\begin{equation}
+  f^{0\to1}\leftarrow f^{0\to1}+\delta\,\operatorname{sgn}(\rho_{b-1}-\rho_b),
+  \qquad
+  f^{1\to0}\leftarrow f^{1\to0}-\delta\,\operatorname{sgn}(\rho_{b-1}-\rho_b),
+  \label{eq:bahook}
+\end{equation}
+with step $\delta=5$~bps, each side clamped to the box: when the
+external price of token0 falls, selling token0 into the pool (the
+direction an arbitrageur would trade) becomes dearer, and conversely.
+A dealer widening the side the market is leaving. Update granularity:
+block. Measured gas: 108k (two feed reads per update). This is the
+policy that owns the storm corner at retail-heavy operating points.
+
+\subsection{\texttt{ABHook} --- constant-sum reallocation}
+Endogenous: it watches the \emph{pool's own} price, not a feed (its
+feed arguments are unused). With $\Delta_t$ the relative change of the
+pool's $\sqrt{\text{price}}$ since the previous swap,
+\begin{equation}
+  f^{0\to1}\leftarrow
+  \operatorname{clamp}\!\left(f^{0\to1}-c\,\Delta_t\right),\qquad
+  f^{1\to0}=K-f^{0\to1},
+  \label{eq:abhook}
+\end{equation}
+with sensitivity $c=100$~bps per unit relative move and the invariant
+$f^{0\to1}+f^{1\to0}=K=60$~bps at all times, which confines each side
+to $[1,59]$~bps. The hook never changes its total fee \emph{budget} ---
+it only re-aims it against the direction the pool price is moving, so
+it is the cleanest test of whether reallocation alone pays (it does
+not: it loses in every cell of every matrix). Update granularity: every
+trade. Measured gas: 94k.
+
+\subsection{Volatility hook --- symmetric level control}
+Oracle-driven and symmetric. Per block it updates an exponentially
+weighted per-minute variance of the external ratio's relative change
+(weight $\alpha=0.1$, the squared move divided by the elapsed minutes),
+and charges
+\begin{equation}
+  f=\operatorname{clamp}\!\left(f_{\mathrm{base}}
+  +c\,\hat{\sigma}\right),\qquad
+  f_{\mathrm{base}}=20~\mathrm{bps},\quad c=2\times10^{6},
+  \label{eq:volhook}
+\end{equation}
+in both directions, where $\hat{\sigma}$ is the per-minute standard
+deviation estimate. The constants map the measured 2024 minute-sigma
+range onto the box: calm ($\hat\sigma\!\approx\!4\times10^{-4}$)
+$\to$ ${\sim}28$~bps, stormy ($\hat\sigma\!\approx\!2\times10^{-3}$)
+$\to$ ${\sim}60$~bps, extremes saturate at the ceiling. This is the
+policy that owns the storm corner at informed-heavy operating points.
+Measured gas: 123k (the dearest: two feed reads plus estimator state).
+
+\subsection{\texttt{MEVChargeHook} --- size- and history-dependent charge}
+Endogenous and symmetric in direction, but the only policy whose fee
+depends on the \emph{trade} rather than the market: on top of a 30~bps
+base it applies a time-decaying surcharge when the same sender has
+recently traded (cooldown 15~s) and a surcharge increasing in trade
+size, capped at the box ceiling --- so its effective range is
+$[30,100]$~bps. Because the fee reads the trade size, the arbitrageur's
+closed form does not apply and its optimal trade is found by ternary
+search. Measured gas: 95k. In Fig.~\ref{fig:fee-response} it alternates
+between base and cap as the surcharge triggers fire.
+
+\section{Derivation of the Arbitrage Optimum}
 \label{app:arb}
 
 Within one tick range a Uniswap v3/v4 pool with liquidity $L$ obeys the
