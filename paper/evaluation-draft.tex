@@ -371,7 +371,10 @@ protocol.
 \label{app:policies}
 
 All policies share the fee box $[1,100]$~bps (fees are \texttt{uint24}
-values in hundredths of a basis point) and the same harness path;
+values in hundredths of a basis point), and
+$\operatorname{clamp}(x)=\min(\max(x,f_{\min}),f_{\max})$ denotes
+projection onto that box (per-side bounds where noted). All share the
+same harness path;
 ``measured gas'' is the EVM-measured median per swap including the 21k
 intrinsic transaction cost. Directional fees are written
 $f^{0\to1}$ (selling token0) and $f^{1\to0}$; all start at 30~bps
