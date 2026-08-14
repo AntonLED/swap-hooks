@@ -214,8 +214,7 @@ contract VolatilityHook is BaseOverrideFee, Ownable {
         }
 
         lastPriceRatio[poolId] = ratio;
-        _meta[poolId] =
-            Meta({lastBlock: uint64(block.number), lastUpdateTs: uint64(block.timestamp), n: meta.n + 1});
+        _meta[poolId] = Meta({lastBlock: uint64(block.number), lastUpdateTs: uint64(block.timestamp), n: meta.n + 1});
 
         return (this.afterSwap.selector, 0);
     }

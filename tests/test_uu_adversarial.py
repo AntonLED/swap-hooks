@@ -445,6 +445,7 @@ def test_uu_and_arb_volume_split_by_trader_tag():
 # `tests/test_adversarial_econ.py`, both written from the spec's intent rather
 # than from this file.
 
+
 def test_mevcharge_never_exceeds_the_shared_fee_box():
     from experiments.matrix import load_windows
 

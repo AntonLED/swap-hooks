@@ -249,7 +249,9 @@ def main() -> None:
     else:
         print(f"{len(specs)} cells, {workers} workers")
     if args.uu:
-        print(f"retail scale: {args.uu_turnover:g}x the calibrated kappa -> {results_root.name}/")
+        print(
+            f"retail scale: {args.uu_turnover:g}x the calibrated kappa -> {results_root.name}/"
+        )
 
     started = time.time()
 

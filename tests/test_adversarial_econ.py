@@ -250,8 +250,12 @@ def test_net_result_tt_is_minus_the_exact_integer_trade_time_flow_value():
     """
     big = 5_800_000_000_000_000_000
     swaps = [
-        _swap(delta0=big, delta1=-big, extPrice0=2 * PRICE_SCALE, extPrice1=PRICE_SCALE),
-        _swap(delta0=big, delta1=-big, extPrice0=3 * PRICE_SCALE, extPrice1=PRICE_SCALE),
+        _swap(
+            delta0=big, delta1=-big, extPrice0=2 * PRICE_SCALE, extPrice1=PRICE_SCALE
+        ),
+        _swap(
+            delta0=big, delta1=-big, extPrice0=3 * PRICE_SCALE, extPrice1=PRICE_SCALE
+        ),
     ]
     frame = _frame(swaps)
 
@@ -276,7 +280,9 @@ def test_net_result_equals_minus_arb_mtm_on_a_closed_system():
     """
     liquidity = 10**21
     sqrt_start, sqrt_end = Q96, int(Q96 * 1.05**0.5)
-    start0, start1 = amounts_for_liquidity(liquidity, sqrt_start, TICK_LOWER, TICK_UPPER)
+    start0, start1 = amounts_for_liquidity(
+        liquidity, sqrt_start, TICK_LOWER, TICK_UPPER
+    )
     end0, end1 = amounts_for_liquidity(liquidity, sqrt_end, TICK_LOWER, TICK_UPPER)
 
     # Trader delta = what left the pool. Built from the position formula so the
@@ -534,9 +540,9 @@ def test_uumath_r_matches_the_spec_formula_in_exact_arithmetic(
     [
         0,
         -1,
-        -10**12,
-        -10**15,
-        -10**17,
+        -(10**12),
+        -(10**15),
+        -(10**17),
         -(10**18),
         -(2 * 10**18),
         -(10**19),
@@ -689,7 +695,9 @@ def test_kappa_reproduces_the_manifest_constant_from_the_cached_year():
     )
     reference = BASKET_USDT / (geo.mean() * 1440)
 
-    manifests = sorted(glob.glob(str(ROOT / "results-uu" / "matrix" / "*ETH-SHIB*.manifest.json")))
+    manifests = sorted(
+        glob.glob(str(ROOT / "results-uu" / "matrix" / "*ETH-SHIB*.manifest.json"))
+    )
     if not manifests:
         pytest.skip("results-uu matrix not present")
     shipped = json.loads(Path(manifests[0]).read_text())["S"]["uu_kappa"]
@@ -741,7 +749,9 @@ def test_discrete_mode_sizes_are_mean_preserving():
     profile = pd.DataFrame({"open_time": np.arange(n) * 60_000, "v_usdt": [1000.0] * n})
     path = ROOT / ".pytest-uu-discrete.csv"
     try:
-        export_uu_trace(profile, kappa=1.0, path=path, mode="discrete", seed=7, sigma=1.0)
+        export_uu_trace(
+            profile, kappa=1.0, path=path, mode="discrete", seed=7, sigma=1.0
+        )
         rows = [line.split(",") for line in path.read_text().strip().splitlines()]
         sizes = np.array([int(r[1]) for r in rows], dtype=float) / WAD
     finally:
@@ -976,16 +986,25 @@ def test_recorded_fee_log_agrees_with_the_pools_own_fee_accounting():
             continue
         liquidity = int(window["liquidity"])
         fee0 = (
-            int(window["feeGrowthInside0X128"])
-            - int(window["feeGrowthInside0X128Initial"])
-        ) * liquidity / 2**128
+            (
+                int(window["feeGrowthInside0X128"])
+                - int(window["feeGrowthInside0X128Initial"])
+            )
+            * liquidity
+            / 2**128
+        )
         fee1 = (
-            int(window["feeGrowthInside1X128"])
-            - int(window["feeGrowthInside1X128Initial"])
-        ) * liquidity / 2**128
-        pool = fee0 / WAD * int(window["extPrice0Final"]) / PRICE_SCALE + fee1 / WAD * int(
-            window["extPrice1Final"]
-        ) / PRICE_SCALE
+            (
+                int(window["feeGrowthInside1X128"])
+                - int(window["feeGrowthInside1X128Initial"])
+            )
+            * liquidity
+            / 2**128
+        )
+        pool = (
+            fee0 / WAD * int(window["extPrice0Final"]) / PRICE_SCALE
+            + fee1 / WAD * int(window["extPrice1Final"]) / PRICE_SCALE
+        )
         logged = sum(
             int(r["amountIn"])
             * int(r["feePips"])

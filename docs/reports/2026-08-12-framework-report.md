@@ -198,14 +198,14 @@ unimodal in size (tested against the real fee shape).
 Both formulas were re-derived independently during the 2026-08-12 audit and
 match the implementation.
 
-**$\Pi^*$ is a decision quantity, not an accounting one — it appears in
-no metric.** It answers, before the trade, whether to trade and at what
-size; the metrics of [§9](#9-metrics) are then computed exclusively from
-the balance changes of swaps that actually executed, with the pool's
-real rounding and fees. $\Pi^*$ influences results only by deciding
-which trades exist. (Each arbitrage swap's trace does log its $\Pi^*$
-as `expectedProfit`, so decision and realisation can be compared as a
-diagnostic — but nothing downstream computes with it.)
+**$\Pi^*$ is a decision quantity, not an accounting one — it appears in no
+metric.** It answers, before the trade, whether to trade and at what size; the
+metrics of [§9](#9-metrics) are then computed exclusively from the balance
+changes of swaps that actually executed, with the pool's real rounding and fees.
+$\Pi^*$ influences results only by deciding which trades exist. (Each arbitrage
+swap's trace does log its $\Pi^*$ as `expectedProfit`, so decision and
+realisation can be compared as a diagnostic — but nothing downstream computes
+with it.)
 
 ### 4.2 Uninformed users (retail)
 
@@ -1062,3 +1062,4 @@ that drew them.
   re-runs skippable.
 - **conservation check** — pool-state vs trader-flow reconstruction of LP
   holdings; agreement at ~1e-16 or the cell is invalid.
+$$

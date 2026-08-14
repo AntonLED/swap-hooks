@@ -141,7 +141,11 @@ def main() -> None:
 
 
 GAS = [5_000_000_000, 20_000_000_000, 80_000_000_000]
-SCENARIO_COLOUR = {5_000_000_000: "#7fb2e8", 20_000_000_000: ACCENT, 80_000_000_000: "#123c6e"}
+SCENARIO_COLOUR = {
+    5_000_000_000: "#7fb2e8",
+    20_000_000_000: ACCENT,
+    80_000_000_000: "#123c6e",
+}
 VOLATILE = ["ETH/SHIB", "ETH/USDC"]
 
 
@@ -188,16 +192,38 @@ def main_high() -> None:
         ax.set_facecolor(SURFACE)
         ax.axhline(0, color=INK_MUTED, linewidth=1.0, zorder=1)
         for gas in GAS:
-            sub = table[(table["policy"] == policy) & (table["gas_price_wei"] == gas)].sort_values("kappa")
+            sub = table[
+                (table["policy"] == policy) & (table["gas_price_wei"] == gas)
+            ].sort_values("kappa")
             xs = sub["kappa"] * offsets[gas]
-            ax.plot(xs, sub["median"], color=SCENARIO_COLOUR[gas], linewidth=1.0, alpha=0.5, zorder=2)
+            ax.plot(
+                xs,
+                sub["median"],
+                color=SCENARIO_COLOUR[gas],
+                linewidth=1.0,
+                alpha=0.5,
+                zorder=2,
+            )
             for x, (_, r) in zip(xs, sub.iterrows()):
                 filled = r["ci_low"] > 0 or r["ci_high"] < 0
-                ax.plot([x, x], [r["ci_low"], r["ci_high"]], color=SCENARIO_COLOUR[gas],
-                        linewidth=1.8, solid_capstyle="round", zorder=3)
-                ax.plot(x, r["median"], marker="o", markersize=6,
-                        markerfacecolor=SCENARIO_COLOUR[gas] if filled else SURFACE,
-                        markeredgecolor=SCENARIO_COLOUR[gas], markeredgewidth=1.3, zorder=4)
+                ax.plot(
+                    [x, x],
+                    [r["ci_low"], r["ci_high"]],
+                    color=SCENARIO_COLOUR[gas],
+                    linewidth=1.8,
+                    solid_capstyle="round",
+                    zorder=3,
+                )
+                ax.plot(
+                    x,
+                    r["median"],
+                    marker="o",
+                    markersize=6,
+                    markerfacecolor=SCENARIO_COLOUR[gas] if filled else SURFACE,
+                    markeredgecolor=SCENARIO_COLOUR[gas],
+                    markeredgewidth=1.3,
+                    zorder=4,
+                )
         ax.set_xscale("log")
         ax.set_ylabel(policy, fontsize=8.5, color=INK)
         ax.grid(axis="y", color=GRID, linewidth=0.6)
@@ -210,14 +236,23 @@ def main_high() -> None:
         ax.margins(y=0.25)
 
     axes[-1].set_xticks([lv for lv, _ in LEVELS])
-    axes[-1].set_xticklabels([f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=8)
+    axes[-1].set_xticklabels(
+        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=8
+    )
     axes[-1].set_xlabel("κ — retail turnover, baskets/day", fontsize=9, color=INK_MUTED)
     axes[-1].minorticks_off()
 
     handles = [
-        plt.Line2D([], [], marker="o", linestyle="", markersize=7,
-                   markerfacecolor=SCENARIO_COLOUR[g], markeredgecolor=SURFACE,
-                   label=f"{g // 10**9} gwei")
+        plt.Line2D(
+            [],
+            [],
+            marker="o",
+            linestyle="",
+            markersize=7,
+            markerfacecolor=SCENARIO_COLOUR[g],
+            markeredgecolor=SURFACE,
+            label=f"{g // 10**9} gwei",
+        )
         for g in GAS
     ]
     axes[0].legend(handles=handles, loc="upper right", frameon=False, fontsize=8)
@@ -225,12 +260,15 @@ def main_high() -> None:
     fig.suptitle(
         "The storm slice: advantage over static 30 bps in HIGH-volatility windows, by κ and gas\n"
         "(volatile pairs pooled, 48 windows per point, 95% bootstrap CI; filled = CI excludes zero)",
-        fontsize=10, color=INK,
+        fontsize=10,
+        color=INK,
     )
     fig.tight_layout(rect=(0, 0, 1, 0.95))
 
     out = ROOT / "paper" / "Image" / "uu_kappa_trend_high.pdf"
-    with figure_note("five full matrices, post gas-fix harness of 2026-08-12; high-volatility tercile only"):
+    with figure_note(
+        "five full matrices, post gas-fix harness of 2026-08-12; high-volatility tercile only"
+    ):
         _save(fig, out, table=table)
     print(f"written: {out} (+ .csv)")
 

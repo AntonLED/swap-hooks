@@ -40,7 +40,13 @@ LEVELS = [  # kappa, label lines (kept short), measured arb share
 ]
 # One hue, dark = calibrated emphasis handled by linewidth instead:
 # sequential lightness encodes kappa (magnitude), same as the gas figure.
-SHADES = {3.0: "#9dc1ea", 1.0: "#2a78d6", 0.3: "#7fb2e8", 0.1: "#5f9be0", 0.03: "#bcd4f0"}
+SHADES = {
+    3.0: "#9dc1ea",
+    1.0: "#2a78d6",
+    0.3: "#7fb2e8",
+    0.1: "#5f9be0",
+    0.03: "#bcd4f0",
+}
 ORDERED_SHADES = ["#123c6e", "#2a78d6", "#5f9be0", "#8ab5e8", "#bcd4f0"]  # top->bottom
 
 
@@ -70,13 +76,14 @@ def main() -> None:
         v = kappa * BASKET * shape  # USDT per minute
         emphasis = kappa == 1.0
         ax.plot(
-            hours, v,
+            hours,
+            v,
             color=colour,
             linewidth=2.0 if emphasis else 1.2,
             zorder=3 if emphasis else 2,
         )
         daily = kappa * BASKET
-        daily_label = f"{daily/1e6:g}M"
+        daily_label = f"{daily / 1e6:g}M"
         ax.annotate(
             f"κ = {kappa:g} · {daily_label}/day · arb {arb}\n{kind}",
             (24.15, v[-1]),

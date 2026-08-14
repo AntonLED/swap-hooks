@@ -264,7 +264,11 @@ def compute(
     # arb rows at all, both the gross and gas terms are trivially zero
     # regardless of extPriceGas quality, so 0.0 there is a real answer, not
     # a guess.
-    if "extPriceGas" not in swaps.columns or not arb_rows.empty and (arb_rows["extPriceGas"] == 0).all():
+    if (
+        "extPriceGas" not in swaps.columns
+        or not arb_rows.empty
+        and (arb_rows["extPriceGas"] == 0).all()
+    ):
         arb_profit_realized = None
     else:
         arb_gross_tt = _trade_time_value_usdt(arb_rows)
@@ -322,9 +326,7 @@ def compute(
             value = _usd(float(amount), float(p0 if zero_for_one else p1))
             executed_usdt += value
             potential_usdt += value * WAD / p
-        uu_participation = (
-            (executed_usdt / potential_usdt) if potential_usdt else None
-        )
+        uu_participation = (executed_usdt / potential_usdt) if potential_usdt else None
 
     return {
         "fee_income": fee_income,

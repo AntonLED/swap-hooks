@@ -27,7 +27,7 @@ alongside its results: … initial pool price (`P₀`) and initial liquidity
 **Code.** `experiments/matrix.py:264`
 
 ```python
-p0_sqrt_price_x96=None,  # set by the harness from the window's first candle
+p0_sqrt_price_x96 = (None,)  # set by the harness from the window's first candle
 ```
 
 `experiments/manifest.py:138` writes it straight through. Verified on disk:

@@ -449,13 +449,7 @@ contract ReplayTest is Test, HookTest {
             // it by construction. Evaluated at the POTENTIAL slice, which is
             // known before P, so the fee -> P -> size -> fee loop stays broken.
             int256 r = UUMath.rWad(
-                s,
-                poolManager.getLiquidity(poolId),
-                extPriceX96,
-                fee,
-                zeroForOne,
-                potentialAmountIn,
-                _uuGasCost(candle)
+                s, poolManager.getLiquidity(poolId), extPriceX96, fee, zeroForOne, potentialAmountIn, _uuGasCost(candle)
             );
             uint256 p = UUMath.participationWad(r, uuLambdaWad);
 

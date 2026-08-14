@@ -1,9 +1,9 @@
 > **SUPERSEDED 2026-08-12.** Every number in this document comes from runs
 > withdrawn by the gas-denomination revision of 2026-08-12 (see
-> `docs/reports/2026-08-12-framework-report.md` §11). Do NOT apply these
-> edits as written. The current edit list is
-> `paper-edits-required-2026-08-12.md`; current citable numbers live in the
-> report and in the CSVs beside each figure in `paper/Image/`.
+> `docs/reports/2026-08-12-framework-report.md` §11). Do NOT apply these edits
+> as written. The current edit list is `paper-edits-required-2026-08-12.md`;
+> current citable numbers live in the report and in the CSVs beside each figure
+> in `paper/Image/`.
 
 # Paper edits required — work list, 2026-08-10
 

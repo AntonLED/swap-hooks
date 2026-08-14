@@ -83,9 +83,7 @@ def test_the_spread_across_seeds_is_reported():
     range has to travel with the verdict."""
     table = stability(analyse(_frame()))
 
-    assert {"median_min", "median_median", "median_max", "spread"} <= set(
-        table.columns
-    )
+    assert {"median_min", "median_median", "median_max", "spread"} <= set(table.columns)
     assert (table["spread"] >= 0).all()
 
 

@@ -419,11 +419,25 @@ def test_draw_all_uu_returns_what_it_wrote_rather_than_a_glob(tmp_path):
     results.mkdir()
     figures.mkdir()
     swap = {
-        "kind": "swap", "feePips": 3000, "candle": 0, "blockNumber": 1,
-        "timestamp": 0, "zeroForOne": True, "amountIn": "1", "amountOut": "1",
-        "feeAB": 3000, "feeBA": 3000, "delta0": "1", "delta1": "-1",
-        "expectedProfit": "0", "gas": 1, "sender": "0x0", "extPrice0": "1",
-        "extPrice1": "1", "sqrtPriceBeforeX96": "1", "sqrtPriceAfterX96": "1",
+        "kind": "swap",
+        "feePips": 3000,
+        "candle": 0,
+        "blockNumber": 1,
+        "timestamp": 0,
+        "zeroForOne": True,
+        "amountIn": "1",
+        "amountOut": "1",
+        "feeAB": 3000,
+        "feeBA": 3000,
+        "delta0": "1",
+        "delta1": "-1",
+        "expectedProfit": "0",
+        "gas": 1,
+        "sender": "0x0",
+        "extPrice0": "1",
+        "extPrice1": "1",
+        "sqrtPriceBeforeX96": "1",
+        "sqrtPriceAfterX96": "1",
     }
     name = "MyHook-3000-ETHUSDT-SHIBUSDT-1704067200000-20000000000-persistent.jsonl"
     (results / name).write_text(json.dumps(swap) + "\n")

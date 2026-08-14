@@ -5,163 +5,157 @@ Last updated: 2026-08-12, evening. Deadline: 2026-08-18.
 ## STATE — end of 2026-08-12. Paper-writing phase begins.
 
 **All five κ operating points exist as full matrices on the post-gasfix
-harness** (5,832 cells each, 0 errors, conservation ~1e-16):
-`results-uu/` (κ=1.0) and `results-uu/turnover-{0.03,0.1,0.3,3}/`.
-Measured arb shares: 89/58/25/13/16%.
+harness** (5,832 cells each, 0 errors, conservation ~1e-16): `results-uu/`
+(κ=1.0) and `results-uu/turnover-{0.03,0.1,0.3,3}/`. Measured arb shares:
+89/58/25/13/16%.
 
-**Figures (all in `paper/Image/`, CSV beside each, operating-point
-stamps):** per-κ regime×gas grids (`uu_*regime_gas_grid{,_rel}` × 5
-configs), κ trends `uu_kappa_trend{,_high}`, gas costs
-`uu_gas_cost_per_swap`, volume profile `uu_volume_profile`, plus the
-notebook 07/08 sets for headline and t01. Drawing scripts:
-`analysis/draw_{regime_gas_grid,gas_costs,uu_profile,kappa_trend}.py`
+**Figures (all in `paper/Image/`, CSV beside each, operating-point stamps):**
+per-κ regime×gas grids (`uu_*regime_gas_grid{,_rel}` × 5 configs), κ trends
+`uu_kappa_trend{,_high}`, gas costs `uu_gas_cost_per_swap`, volume profile
+`uu_volume_profile`, plus the notebook 07/08 sets for headline and t01. Drawing
+scripts: `analysis/draw_{regime_gas_grid,gas_costs,uu_profile,kappa_trend}.py`
 (grids take `UU_CONFIG=headline|informed|t003|t03|t3`).
 
 **Reports:** `docs/reports/2026-08-12-framework-report.md` (EN, complete:
-architecture/model/methodology/params-interpreted/results all-κ) and
-`.ru.md` (Russian working copy — the owner edits this one; translate back
-after). Statistics presentation is bootstrap-interval-only; Wilcoxon/BH
-stay computed in CSVs (~96% agreement), one footnote.
+architecture/model/methodology/params-interpreted/results all-κ) and `.ru.md`
+(Russian working copy — the owner edits this one; translate back after).
+Statistics presentation is bootstrap-interval-only; Wilcoxon/BH stay computed in
+CSVs (~96% agreement), one footnote.
 
-**The findings, one paragraph:** pooled, no hook beats a well-chosen
-static at ANY κ (`uu_kappa_trend`). Conditionally, the storm ×
-cheap-gas corner wins and replicates at every κ with a clean relay:
-BAHook owns it at retail-heavy mixes (κ≥0.3; +1,556 at κ=1),
-VolatilityHook/DAHook at informed-heavy (κ≤0.1), and at κ=0.03
-VolatilityHook wins storms at ALL gas levels. Gas premium (measured:
-76k static vs 88–124k hooks) is what kills adaptation elsewhere.
+**The findings, one paragraph:** pooled, no hook beats a well-chosen static at
+ANY κ (`uu_kappa_trend`). Conditionally, the storm × cheap-gas corner wins and
+replicates at every κ with a clean relay: BAHook owns it at retail-heavy mixes
+(κ≥0.3; +1,556 at κ=1), VolatilityHook/DAHook at informed-heavy (κ≤0.1), and at
+κ=0.03 VolatilityHook wins storms at ALL gas levels. Gas premium (measured: 76k
+static vs 88–124k hooks) is what kills adaptation elsewhere.
 
-**Still pending:** seed appendix on the fixed harness (owner deferred —
-corner claims are one-seed until then); report extras (exec summary,
-claim-strength ladder, figure guide) — owner deferred.
+**Still pending:** seed appendix on the fixed harness (owner deferred — corner
+claims are one-seed until then); report extras (exec summary, claim-strength
+ladder, figure guide) — owner deferred.
 
 **WARNING for the paper phase:**
-`docs/superpowers/specs/paper-edits-required-2026-08-10.md` (43 main.tex
-edits) predates the gas fix — its numbers (DAHook +341 etc.) are from
-withdrawn runs and MUST NOT be applied as written. The current citable
-numbers live in the reports and figure CSVs.
+`docs/superpowers/specs/paper-edits-required-2026-08-10.md` (43 main.tex edits)
+predates the gas fix — its numbers (DAHook +341 etc.) are from withdrawn runs
+and MUST NOT be applied as written. The current citable numbers live in the
+reports and figure CSVs.
 
 ## RESULTS — the gas-fix rerun REVERSED the headline, 2026-08-12
 
-**A unit defect invalidated every UU run below this section.**
-`_uuGasCost` passed B→A retail gas in token0 units while `UUMath.rWad`
-values both legs in token1 — on the volatile pairs B→A retail effectively
-paid no gas, so gas thinned only one side of the retail flow and the flow
-acquired an artificial directional imbalance growing with the gas price
-(AB/BA uu swap counts 543/688 at 5 gwei → 147/541 at 80 on one cell).
-Confirmed bit-exactly against a logged `rWad`. Fixed in one line, pinned by
-`test_uuHighGasSuppressesBothDirections`, forge 110/110. Contaminated
-results archived at `results-uu-gas-unit-defect/` (matrix, turnover-0.1,
-κ sweep and seed appendix outputs all predate the fix). Notebooks 09–11
-archived under `analysis/archive/pre-gasfix-uu/`; 01–06 (arb-only,
-unaffected) under `analysis/archive/arb-only/`; contaminated figures moved
-out of `paper/Image/` into the defect archive.
+**A unit defect invalidated every UU run below this section.** `_uuGasCost`
+passed B→A retail gas in token0 units while `UUMath.rWad` values both legs in
+token1 — on the volatile pairs B→A retail effectively paid no gas, so gas
+thinned only one side of the retail flow and the flow acquired an artificial
+directional imbalance growing with the gas price (AB/BA uu swap counts 543/688
+at 5 gwei → 147/541 at 80 on one cell). Confirmed bit-exactly against a logged
+`rWad`. Fixed in one line, pinned by `test_uuHighGasSuppressesBothDirections`,
+forge 110/110. Contaminated results archived at `results-uu-gas-unit-defect/`
+(matrix, turnover-0.1, κ sweep and seed appendix outputs all predate the fix).
+Notebooks 09–11 archived under `analysis/archive/pre-gasfix-uu/`; 01–06
+(arb-only, unaffected) under `analysis/archive/arb-only/`; contaminated figures
+moved out of `paper/Image/` into the defect archive.
 
 **Rerun of record** (owner's scope: paper keeps ABHook, BAHook, DAHook,
-MEVChargeHook): 8 policies (4 hooks + 4 statics) × 3 pairs × 72 windows ×
-3 gas = **5,184 cells, 0 errors, worst conservation 5.4e-16**, in
-`results-uu/`. Notebooks 07/08 re-executed on it; `uu_*` figures redrawn.
+MEVChargeHook): 8 policies (4 hooks + 4 statics) × 3 pairs × 72 windows × 3 gas
+= **5,184 cells, 0 errors, worst conservation 5.4e-16**, in `results-uu/`.
+Notebooks 07/08 re-executed on it; `uu_*` figures redrawn.
 
 **The headline flipped.** Median across 18 volatile strata vs MyHook@3000
 (end-of-window / trade-time):
 
-| policy        | corrected                          | pre-fix (withdrawn) |
-| ------------- | ---------------------------------- | ------------------- |
-| MyHook@6000   | −2 [−186, +266]                    | +350 vs its own ref |
-| BAHook        | −100 [−453, +350]                  | +114 [−108, +549]   |
-| DAHook        | **−235 [−381, −104]** / −222       | +341 [+264, +672]   |
-| ABHook        | −460 [−630, −288]                  | −254 [−440, −191]   |
-| MEVChargeHook | −913 [−1659, −728]                 | (0W/24L)            |
+| policy        | corrected                    | pre-fix (withdrawn) |
+| ------------- | ---------------------------- | ------------------- |
+| MyHook@6000   | −2 [−186, +266]              | +350 vs its own ref |
+| BAHook        | −100 [−453, +350]            | +114 [−108, +549]   |
+| DAHook        | **−235 [−381, −104]** / −222 | +341 [+264, +672]   |
+| ABHook        | −460 [−630, −288]            | −254 [−440, −191]   |
+| MEVChargeHook | −913 [−1659, −728]           | (0W/24L)            |
 
 **No dynamic policy beats static 30 bps at the calibrated point.** DAHook's
-pre-fix win is attributable to its directional ratchet monetising the
-artificial one-sided flow. Static curve 1,644 / 11,890 / 11,932 / 7,936 at
-5/30/60/100 bps — the 30–60 plateau is the optimum. IL invariance holds
-(fee-income deltas explain the losses; il_delta single digits). Informed
-share now RISES with gas, 12.4% → 13.7% — the 2026-08-10 prereg
-prediction, which read flat pre-fix, is directionally confirmed.
-Participation 0.367 → 0.221 across gas.
+pre-fix win is attributable to its directional ratchet monetising the artificial
+one-sided flow. Static curve 1,644 / 11,890 / 11,932 / 7,936 at 5/30/60/100 bps
+— the 30–60 plateau is the optimum. IL invariance holds (fee-income deltas
+explain the losses; il_delta single digits). Informed share now RISES with gas,
+12.4% → 13.7% — the 2026-08-10 prereg prediction, which read flat pre-fix, is
+directionally confirmed. Participation 0.367 → 0.221 across gas.
 
-**κ = 0.1 probe re-run on the fixed harness (same day): adaptation loses
-there too.** 504 cells (7 policies × 24 windows × 3 gas, ETH/SHIB), 0
-errors, `results/sensitivity/kappa.csv` + `kappa01-run.log`, driver
-`run_kappa_01.py`. Arb share 63.8%. Static curve −300/2,447/3,190/3,349 at
-5/30/60/100 — monotone, argmax at the box ceiling. Vs 30 bps over 72
-windows: MyHook@6000 +190\*/+126\* wins; DAHook −41/+2 n.s.; ABHook
-−79\*/−65\* loses; BAHook mixed (−67 n.s. end vs +42\* tt, all from a
-high-regime +461\*/+633\* signal — where static 100 bps gains +1,938\*).
-The pre-fix sweep's "BAHook/DAHook positive and significant at every κ" is
-withdrawn with its runs. **Still not re-run: seed appendix, the other four
-sweep levels, the full κ = 0.1 matrix.** Pre-fix sensitivity outputs
-archived at `results-uu-gas-unit-defect/sensitivity-pre-gasfix/`
-(capture_share left in place — arb-only, unaffected).
+**κ = 0.1 probe re-run on the fixed harness (same day): adaptation loses there
+too.** 504 cells (7 policies × 24 windows × 3 gas, ETH/SHIB), 0 errors,
+`results/sensitivity/kappa.csv` + `kappa01-run.log`, driver `run_kappa_01.py`.
+Arb share 63.8%. Static curve −300/2,447/3,190/3,349 at 5/30/60/100 — monotone,
+argmax at the box ceiling. Vs 30 bps over 72 windows: MyHook@6000 +190\*/+126\*
+wins; DAHook −41/+2 n.s.; ABHook −79\*/−65\* loses; BAHook mixed (−67 n.s. end
+vs +42\* tt, all from a high-regime +461\*/+633\* signal — where static 100 bps
+gains +1,938\*). The pre-fix sweep's "BAHook/DAHook positive and significant at
+every κ" is withdrawn with its runs. **Still not re-run: seed appendix, the
+other four sweep levels, the full κ = 0.1 matrix.** Pre-fix sensitivity outputs
+archived at `results-uu-gas-unit-defect/sensitivity-pre-gasfix/` (capture_share
+left in place — arb-only, unaffected).
 
 ### VolatilityHook recalibration cycle (2026-08-12, after the gas-fix rerun)
 
-Three iterations, run at the owner's direction (formal prereg protocol
-waived by the owner mid-cycle; the calibration spec
-`2026-08-12-volatilityhook-recalibration-preregistration.md` records the
-first iteration's a-priori rule and predictions):
+Three iterations, run at the owner's direction (formal prereg protocol waived by
+the owner mid-cycle; the calibration spec
+`2026-08-12-volatilityhook-recalibration-preregistration.md` records the first
+iteration's a-priori rule and predictions):
 
 1. **Coefficient rescale** (fBase 5→20 bps, c 20,000→2,000,000, from 2024
-   minute-σ quantiles): FAILED −1,267 [−1,979, −565] vs 30 bps. Fee pinned
-   at the 100 bps ceiling in storms: the estimator measures variance PER
-   UPDATE (swaps land every 3–4 min) against a per-minute calibration.
-2. **dt normalisation** (squared change / elapsed minutes, Brownian
-   scaling): fee levels now correct (calm ~29 bps, storm ~67, no ceiling
-   pinning) but still −809 pooled. Calm-regime loss traced entirely to the
-   hook's OWN GAS: 127.5k/swap vs 76.3k static; retail pays it inside `r`
-   and walks (retained volume 89/83/67% of baseline at 5/20/80 gwei).
-3. **Hot-path slimming** (Welford diagnostic removed, fee/sigma derived on
-   read, packed meta slot) + gas re-measured 127,508→123,476 — the oracle
-   reads dominate, little to win. Final: pooled −752 [−1,069, −280]; high
-   regime covers zero; **by gas: high-vol at 5 gwei POSITIVE on both pairs
-   (+191/+692, n.s.), 20 gwei parity, 80 gwei significant loss.**
+   minute-σ quantiles): FAILED −1,267 [−1,979, −565] vs 30 bps. Fee pinned at
+   the 100 bps ceiling in storms: the estimator measures variance PER UPDATE
+   (swaps land every 3–4 min) against a per-minute calibration.
+2. **dt normalisation** (squared change / elapsed minutes, Brownian scaling):
+   fee levels now correct (calm ~29 bps, storm ~67, no ceiling pinning) but
+   still −809 pooled. Calm-regime loss traced entirely to the hook's OWN GAS:
+   127.5k/swap vs 76.3k static; retail pays it inside `r` and walks (retained
+   volume 89/83/67% of baseline at 5/20/80 gwei).
+3. **Hot-path slimming** (Welford diagnostic removed, fee/sigma derived on read,
+   packed meta slot) + gas re-measured 127,508→123,476 — the oracle reads
+   dominate, little to win. Final: pooled −752 [−1,069, −280]; high regime
+   covers zero; **by gas: high-vol at 5 gwei POSITIVE on both pairs (+191/+692,
+   n.s.), 20 gwei parity, 80 gwei significant loss.**
 
-**The finding:** volatility-tracking creates a storm advantage of the same
-order as the policy's own gas premium — realised at cheap gas, destroyed at
-dear. The gas axis is what makes this visible.
+**The finding:** volatility-tracking creates a storm advantage of the same order
+as the policy's own gas premium — realised at cheap gas, destroyed at dear. The
+gas axis is what makes this visible.
 
-**κ = 0.1 full matrix re-run post-fix (2026-08-12, evening): 5,832 cells,
-0 errors, conservation 4.3e-16, arb share 0.577, 5 zero-trade cells
-(stable-pair extremes), `results-uu/turnover-0.1/`.** Notebooks 07/08
-executed in `informed` (outputs to scratchpad copies; figures/CSVs in
-`paper/Image/uu_t01_*`); grid script parameterised by `UU_CONFIG`
-(headline|informed), relative variant refuses non-positive-baseline
-panels. **The storm × cheap-gas corner replicates and strengthens:
-VolatilityHook +308 end / +499 tt and DAHook +246/+296 beat the baseline
-in high-vol × 5 gwei on BOTH valuations; BAHook wins high-vol at all
-three gas levels on trade-time only (mixed).** Winner depends on mix:
-BAHook at κ = 1.0, VolatilityHook/DAHook at κ = 0.1.
+**κ = 0.1 full matrix re-run post-fix (2026-08-12, evening): 5,832 cells, 0
+errors, conservation 4.3e-16, arb share 0.577, 5 zero-trade cells (stable-pair
+extremes), `results-uu/turnover-0.1/`.** Notebooks 07/08 executed in `informed`
+(outputs to scratchpad copies; figures/CSVs in `paper/Image/uu_t01_*`); grid
+script parameterised by `UU_CONFIG` (headline|informed), relative variant
+refuses non-positive-baseline panels. **The storm × cheap-gas corner replicates
+and strengthens: VolatilityHook +308 end / +499 tt and DAHook +246/+296 beat the
+baseline in high-vol × 5 gwei on BOTH valuations; BAHook wins high-vol at all
+three gas levels on trade-time only (mixed).** Winner depends on mix: BAHook at
+κ = 1.0, VolatilityHook/DAHook at κ = 0.1.
 
 **The regime × gas grid (new figure, `paper/Image/uu_regime_gas_grid.pdf`
-+ CSV, drawn by `analysis/draw_regime_gas_grid.py`):** pooling the two
-volatile pairs per (regime, gas) panel, **`BAHook` significantly beats the
-30 bps baseline in high-vol × 5 gwei (+1,556 [+894, +2,501] end /
-+1,481 tt — both valuations) and mid-vol × 5 gwei (+367/+461)**; high ×
-20 gwei is mixed (end only); everything at 80 gwei loses. DAHook one
-mixed panel; VolatilityHook positive n.s. in the storm-cheap corner. The
-conditional headline: adaptation pays where storm earnings exceed the
-policy's own gas tax. Estimand caveat: pooled volatile-pair windows, one
-seed, corner claim not pre-registered — reported as observed structure. `matrix` now = 9 policies =
-5,832 cells; notebooks 07/08 + all `uu_*` figures re-executed on it.
-Notebook 07's `assert_one_model` guard REMOVED at the owner's direction
-(the matrix dir mixes revisions; a 355-cell differential vs the old
-summary showed only CSV round-trip noise, controls confirmed the artifact
-rate on untouched policies). Open: owner to choose between reporting this
-as the conditional finding vs one more design iteration (oracle-free
-pool-price σ estimator, ~100k gas).
+
+- CSV, drawn by `analysis/draw_regime_gas_grid.py`):** pooling the two volatile
+  pairs per (regime, gas) panel, **`BAHook` significantly beats the 30 bps
+  baseline in high-vol × 5 gwei (+1,556 [+894, +2,501] end / +1,481 tt — both
+  valuations) and mid-vol × 5 gwei (+367/+461)**; high × 20 gwei is mixed (end
+  only); everything at 80 gwei loses. DAHook one mixed panel; VolatilityHook
+  positive n.s. in the storm-cheap corner. The conditional headline: adaptation
+  pays where storm earnings exceed the policy's own gas tax. Estimand caveat:
+  pooled volatile-pair windows, one seed, corner claim not pre-registered —
+  reported as observed structure. `matrix` now = 9 policies = 5,832 cells;
+  notebooks 07/08 + all `uu_*` figures re-executed on it. Notebook 07's
+  `assert_one_model` guard REMOVED at the owner's direction (the matrix dir
+  mixes revisions; a 355-cell differential vs the old summary showed only CSV
+  round-trip noise, controls confirmed the artifact rate on untouched policies).
+  Open: owner to choose between reporting this as the conditional finding vs one
+  more design iteration (oracle-free pool-price σ estimator, ~100k gas).
 
 Colleague-facing report: `docs/reports/2026-08-12-framework-report.md`
-(architecture, model incl. relation to the source Eqs. 8–9 and the λ
-rationale, methodology, parameters, corrected results — §10 not yet
-updated with the VolatilityHook cycle). Nothing committed.
+(architecture, model incl. relation to the source Eqs. 8–9 and the λ rationale,
+methodology, parameters, corrected results — §10 not yet updated with the
+VolatilityHook cycle). Nothing committed.
 
 ---
 
-Below this line: state as of 2026-08-11, late. All four runs complete —
-matrix, κ sweep, seed appendix, second operating point. **Every UU-flow
-number below is superseded by the 2026-08-12 section above.**
+Below this line: state as of 2026-08-11, late. All four runs complete — matrix,
+κ sweep, seed appendix, second operating point. **Every UU-flow number below is
+superseded by the 2026-08-12 section above.**
 
 ## RESULTS — the second operating point (κ = 0.1), 2026-08-11
 

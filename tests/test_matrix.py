@@ -343,8 +343,9 @@ def test_run_spec_leaves_kappa_alone_at_the_headline_turnover(monkeypatch):
     captured = {}
     monkeypatch.setattr(
         "experiments.run_one.run_one",
-        lambda *a, **kw: captured.setdefault("uu_kappa", kw.get("uu_kappa"))
-        or {"trade_count": 0},
+        lambda *a, **kw: (
+            captured.setdefault("uu_kappa", kw.get("uu_kappa")) or {"trade_count": 0}
+        ),
     )
     matrix_mod.run_spec(enumerate_runs(_windows())[0], {}, uu_mode="discrete")
 

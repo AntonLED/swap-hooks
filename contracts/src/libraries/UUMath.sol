@@ -176,9 +176,8 @@ library UUMath {
             valueOut = SqrtPriceMath.getAmount1Delta(s2, sqrtPriceX96, liquidity, false);
             valueIn = FullMath.mulDiv(grossIn, extPriceX96, Q96);
         } else {
-            valueOut = FullMath.mulDiv(
-                SqrtPriceMath.getAmount0Delta(sqrtPriceX96, s2, liquidity, false), extPriceX96, Q96
-            );
+            valueOut =
+                FullMath.mulDiv(SqrtPriceMath.getAmount0Delta(sqrtPriceX96, s2, liquidity, false), extPriceX96, Q96);
             valueIn = grossIn;
         }
 

@@ -23,7 +23,16 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from experiments.figures import ACCENT, ACCENT_ALT, GRID, INK, INK_MUTED, SURFACE, figure_note, _save
+from experiments.figures import (
+    ACCENT,
+    ACCENT_ALT,
+    GRID,
+    INK,
+    INK_MUTED,
+    SURFACE,
+    figure_note,
+    _save,
+)
 
 WINDOW_MS = 1_709_251_200_000  # 2024-03-01: a genuinely stormy ETH/SHIB day
 GAS = 20_000_000_000
@@ -31,8 +40,10 @@ HOOKS = ["BAHook", "DAHook", "ABHook", "VolatilityHook", "MEVChargeHook"]
 
 
 def load_swaps(policy: str):
-    path = ROOT / "results-uu" / (
-        f"{policy}-0-ETHUSDT-SHIBUSDT-{WINDOW_MS}-{GAS}-persistent.jsonl"
+    path = (
+        ROOT
+        / "results-uu"
+        / (f"{policy}-0-ETHUSDT-SHIBUSDT-{WINDOW_MS}-{GAS}-persistent.jsonl")
     )
     return [r for r in map(json.loads, path.open()) if r.get("kind") == "swap"]
 
@@ -85,10 +96,24 @@ def main() -> None:
         hrs = [c / 60.0 for c in candles]
 
         ax.axhline(30, color=INK_MUTED, linewidth=0.8, linestyle=(0, (4, 3)), zorder=2)
-        ax.plot(hrs, ab, color=ACCENT, linewidth=1.2, drawstyle="steps-post",
-                zorder=3, label=r"fee A$\rightarrow$B")
-        ax.plot(hrs, ba, color=ACCENT_ALT, linewidth=1.2, drawstyle="steps-post",
-                zorder=3, label=r"fee B$\rightarrow$A")
+        ax.plot(
+            hrs,
+            ab,
+            color=ACCENT,
+            linewidth=1.2,
+            drawstyle="steps-post",
+            zorder=3,
+            label=r"fee A$\rightarrow$B",
+        )
+        ax.plot(
+            hrs,
+            ba,
+            color=ACCENT_ALT,
+            linewidth=1.2,
+            drawstyle="steps-post",
+            zorder=3,
+            label=r"fee B$\rightarrow$A",
+        )
         ax.set_yscale("log")
         ax.set_ylim(0.7, 1500)
         ax.set_yticks([1, 10, 100, 1000])

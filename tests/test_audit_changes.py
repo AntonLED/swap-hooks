@@ -481,7 +481,9 @@ def test_optimal_size_cannot_return_while_holding_a_snapshot():
     source = REPLAY.read_text()
     body = source.split("function _optimalSize(")[1]
     body = body[: body.index("\n    function ")]
-    held = body[body.index("vm.snapshotState()") : body.index("vm.deleteStateSnapshot(")]
+    held = body[
+        body.index("vm.snapshotState()") : body.index("vm.deleteStateSnapshot(")
+    ]
     assert "return" not in held, (
         "_optimalSize returns while holding an undeleted state snapshot"
     )
@@ -648,12 +650,14 @@ def test_kappa_sweep_uses_the_matrix_default_gas_estimate(tmp_path):
     # the original assertion looked for is gone on purpose. What matters is
     # that the sweep cannot drift from the matrix: it must IMPORT the default
     # rather than carry a copy.
-    assert "DEFAULT_GAS_ESTIMATE" in (ROOT / 'experiments' / 'kappa_sensitivity.py').read_text(), (
-        "the sweep must use the matrix's DEFAULT_GAS_ESTIMATE, not its own copy"
-    )
-    assert not re.search(r"gas\.get\([^,]+,\s*\d", (ROOT / 'experiments' / 'kappa_sensitivity.py').read_text()), (
-        "a numeric literal fallback would silently diverge from the matrix"
-    )
+    assert (
+        "DEFAULT_GAS_ESTIMATE"
+        in (ROOT / "experiments" / "kappa_sensitivity.py").read_text()
+    ), "the sweep must use the matrix's DEFAULT_GAS_ESTIMATE, not its own copy"
+    assert not re.search(
+        r"gas\.get\([^,]+,\s*\d",
+        (ROOT / "experiments" / "kappa_sensitivity.py").read_text(),
+    ), "a numeric literal fallback would silently diverge from the matrix"
 
 
 def test_kappa_sweep_windows_are_a_subset_of_the_matrix_windows():
@@ -841,7 +845,9 @@ def test_forge_writability_is_checked_before_a_run_not_after(tmp_path):
     import run_matrix
 
     allowed = run_matrix.forge_writable_paths()
-    assert allowed, "fs_permissions could not be parsed; the guard would pass everything"
+    assert allowed, (
+        "fs_permissions could not be parsed; the guard would pass everything"
+    )
 
     # A subtree of an allowed entry is allowed -- that is why the sweeps write
     # to results/sensitivity/<level>/ and work.
