@@ -39,10 +39,17 @@ RESULTS = ROOT / "results" / "sensitivity"
 
 SEEDS = (0, 1, 2, 3, 4)
 
-# The baseline plus every policy whose advantage the paper would assert, plus
-# the litmus. A stability check on a policy nobody claims anything about buys
-# nothing.
-POLICIES = ("MyHook@3000", "DAHook", "BAHook", "ABHook")
+# The baseline plus every dynamic policy of the 2026-08-12 matrix of record.
+# The conditional claims now name BAHook (κ = 1), VolatilityHook and DAHook
+# (κ = 0.1) — and the rest cost little once the harness is warm.
+POLICIES = (
+    "MyHook@3000",
+    "DAHook",
+    "BAHook",
+    "ABHook",
+    "VolatilityHook",
+    "MEVChargeHook",
+)
 
 # The two volatile pairs. The claim being checked -- "adaptive fees beat a
 # well-chosen static fee" -- is made only there; on USDC/USDT both policies
@@ -50,10 +57,11 @@ POLICIES = ("MyHook@3000", "DAHook", "BAHook", "ABHook")
 # question.
 PAIRS = (("ETH/SHIB", "ETHUSDT", "SHIBUSDT"), ("ETH/USDC", "ETHUSDT", "USDCUSDT"))
 
-# One gas scenario, the canonical one. Gas is a separate axis with its own
-# result; re-running it five times over would triple the cost of this check
-# without touching the question it asks.
-GAS_PRICE_WEI = 20_000_000_000
+# Two gas scenarios: the canonical 20 gwei, plus 5 gwei — the cheap-gas
+# corner where the storm-window conditional claims (BAHook at κ = 1,
+# VolatilityHook/DAHook at κ = 0.1) actually live. 80 gwei is left out: no
+# positive claim is made there.
+GAS_PRICES_WEI = (5_000_000_000, 20_000_000_000)
 
 WINDOWS_PER_TERCILE = 8
 
@@ -83,10 +91,14 @@ def paths_for(turnover: float) -> tuple[Path, str]:
 
 
 def _one(job):
-    policy_name, pair, seed, window, estimate, turnover = job
+    policy_name, pair, seed, window, gas_price_wei, estimate, turnover = job
     policy = by_name(policy_name)
     pair_name, symbol0, symbol1 = pair
-    work = ROOT / ".work" / f"seed{seed}-{policy_name}-{pair_name}-{window['start_ms']}"
+    work = (
+        ROOT
+        / ".work"
+        / f"seed{seed}-{policy_name}-{pair_name}-{window['start_ms']}-{gas_price_wei}"
+    )
 
     # One directory per seed, for the same reason the kappa sweep uses one per
     # turnover level: `run_one` names a trace from the seven experiment axes and
@@ -111,7 +123,7 @@ def _one(job):
         "seed": seed,
         "window_start_ms": window["start_ms"],
         "regime": window.get("regime"),
-        "gas_price_wei": GAS_PRICE_WEI,
+        "gas_price_wei": gas_price_wei,
         # Recorded per row: without it two operating points' tables are
         # indistinguishable once they leave this module.
         "turnover_multiple": turnover,
@@ -125,7 +137,7 @@ def _one(job):
             window["start_ms"],
             window["end_ms"],
             fee_pips=policy.fee_pips,
-            gas_price_wei=GAS_PRICE_WEI,
+            gas_price_wei=gas_price_wei,
             gas_estimate=estimate,
             basket_usdt=BASKET_USDT,
             size_dependent=policy.size_dependent,
@@ -151,16 +163,26 @@ def run(workers: int = 10, turnover: float = TURNOVER_DEFAULT) -> pd.DataFrame:
     windows = load_windows(per_tercile=WINDOWS_PER_TERCILE)
 
     jobs = [
-        (policy, pair, seed, window, gas.get(policy, DEFAULT_GAS_ESTIMATE), turnover)
+        (
+            policy,
+            pair,
+            seed,
+            window,
+            gas_price,
+            gas.get(policy, DEFAULT_GAS_ESTIMATE),
+            turnover,
+        )
         for policy in POLICIES
         for pair in PAIRS
         for seed in SEEDS
         for window in windows[pair[0]]
+        for gas_price in GAS_PRICES_WEI
     ]
     print(
         f"{len(jobs)} cells: {len(POLICIES)} policies x {len(PAIRS)} pairs x "
-        f"{len(SEEDS)} seeds x {len(windows[PAIRS[0][0]])} windows "
-        f"at {turnover:g}x the calibrated kappa -> {root.relative_to(ROOT)}/"
+        f"{len(SEEDS)} seeds x {len(windows[PAIRS[0][0]])} windows x "
+        f"{len(GAS_PRICES_WEI)} gas at {turnover:g}x the calibrated kappa "
+        f"-> {root.relative_to(ROOT)}/"
     )
 
     rows = []
@@ -206,7 +228,11 @@ def analyse(
     ok = frame[frame["error"].isna()]
 
     rows = []
-    for (pair, seed), group in ok.groupby(["pair", "seed"]):
+    # Pairing is within (seed, gas): the baseline of the same realisation and
+    # the same gas scenario. Anything else compares different random draws.
+    for (pair, seed, gas_price), group in ok.groupby(
+        ["pair", "seed", "gas_price_wei"]
+    ):
         base = group[group["policy"] == BASELINE].set_index("window_start_ms")
         for policy, sub in group.groupby("policy"):
             if policy == BASELINE:
@@ -220,6 +246,7 @@ def analyse(
                     {
                         "pair": pair,
                         "seed": seed,
+                        "gas_price_wei": gas_price,
                         "policy": policy,
                         "valuation": valuation,
                         **wilcoxon_paired(deltas),
@@ -249,13 +276,16 @@ def stability(
     end = tests[tests["valuation"] == "net_result"]
 
     rows = []
-    for (pair, policy), group in end.groupby(["pair", "policy"]):
+    for (pair, policy, gas_price), group in end.groupby(
+        ["pair", "policy", "gas_price_wei"]
+    ):
         medians = group["median"]
         positive = int((medians > 0).sum())
         rows.append(
             {
                 "pair": pair,
                 "policy": policy,
+                "gas_price_wei": gas_price,
                 "seeds": len(group),
                 "seeds_positive": positive,
                 "unanimous": positive in (0, len(group)),
@@ -265,7 +295,7 @@ def stability(
                 "spread": medians.max() - medians.min(),
             }
         )
-    return pd.DataFrame(rows).sort_values(["pair", "policy"])
+    return pd.DataFrame(rows).sort_values(["pair", "policy", "gas_price_wei"])
 
 
 if __name__ == "__main__":
