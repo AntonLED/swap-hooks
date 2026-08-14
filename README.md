@@ -134,6 +134,17 @@ uv run python -m experiments.seed_robustness                # 5 seeds, κ = 1.0
 uv run python -m experiments.seed_robustness --turnover 0.1 # 5 seeds, κ = 0.1
 ```
 
+The seed appendix re-runs a 24-window subset with seeds 0–4: all six policy
+configurations (baseline + five hooks), both volatile pairs, at 5 **and** 20
+gwei — the cheap-gas scenario is included because the storm-corner conditional
+claims live there. 2,880 cells per operating point. It prints a per-(pair,
+policy, gas) sign-stability table and writes `results/sensitivity/seeds.csv` (κ
+= 0.1 goes to `results/sensitivity/seeds-turnover-0.1/`); the directory is
+gitignored — traces are ~1 GB per point. Seed 0 must reproduce the matching
+matrix cells bit for bit; the 2026-08-14 run did, and every storm-corner finding
+kept its sign at all five seeds. `analysis/draw_seed_forest.py` draws the
+result.
+
 **After changing any hook, recalibrate gas:**
 
 ```bash
@@ -150,8 +161,10 @@ the gas axis measures.
 #### 4. Figures and analysis
 
 Notebooks 07/08 report one operating point at a time, selected by `UU_CONFIG`;
-standalone scripts draw the cross-cutting figures. See `analysis/README.md` for
-the full table.
+standalone scripts draw the paper figures. For interactive styling there is
+`analysis/99-figure-sandbox.ipynb` — every paper figure in its own editable cell
+with live (ipympl) rendering; it writes nothing until its `WRITE` flag is
+flipped. See `analysis/README.md` for the full table.
 
 ```bash
 uv run jupyter lab                                   # then open analysis/
@@ -161,12 +174,19 @@ UU_CONFIG=informed uv run jupyter nbconvert --to notebook --execute \
 
 UU_CONFIG=headline uv run python analysis/draw_regime_gas_grid.py
 uv run python analysis/draw_kappa_trend.py           # needs all five matrices
+uv run python analysis/draw_seed_forest.py           # needs the seed appendix
+uv run python analysis/draw_fee_behaviour.py
+uv run python analysis/draw_demand_calibration.py
 uv run python analysis/draw_gas_costs.py
 uv run python analysis/draw_uu_profile.py
 ```
 
-Every figure lands in `paper/Image/` with a CSV of its own numbers beside it and
-the operating point stamped on its face.
+Every figure lands in `paper/Image/` with a CSV of its own numbers beside it.
+Figures carry no in-figure titles — captions live in the LaTeX — and share one
+style, defined once in `experiments/figures.py`: STIX serif (the Times face
+IEEEtran uses), a closed pgfplots-style frame with inward ticks, dark blue =
+beats the baseline, brick red = loses, grey = interval covers zero. Operating
+points are told apart by filename prefix (`uu_`, `uu_t01_`, …).
 
 #### 5. What to check in the output
 
