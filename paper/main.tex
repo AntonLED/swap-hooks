@@ -356,7 +356,7 @@ The experiment compares five dynamic policies with static fees of 5, 30, 60, and
     1--59 bps per side &
     94k\\
 
-    Volatility hook &
+    \texttt{VolatilityHook} &
     Applies the same fee in both directions using an exponentially weighted estimate of external-price variance &
     1--100 bps &
     123k\\
@@ -409,7 +409,7 @@ Comparisons are paired. A policy is differenced against the 30-bps baseline usin
     \texttt{BAHook}        & (-100) & ([-453,350])\\
     \texttt{DAHook}        & (-235) & ([-381,-104])\\
     \texttt{ABHook}        & (-460) & ([-630,-288])\\
-    Volatility hook        & (-752) & ([-1069,-280])\\
+    \texttt{VolatilityHook}        & (-752) & ([-1069,-280])\\
     \texttt{MEVChargeHook} & (-913) & ([-1659,-728])\\
     \bottomrule
   \end{tabular}
@@ -427,7 +427,7 @@ Variation in LP outcome is driven primarily by fee income and retained trading v
 
 Although no policy wins in aggregate, conditional advantages appear in high-volatility, low-gas scenarios. At $\kappa=1$ and 5 gwei, \texttt{BAHook} improves the median LP outcome by (1{,}556) USDT per high-volatility window, with a 95\% confidence interval of ([894,2{,}501]). Its advantage in medium-volatility windows is (367,[115,571]) USDT.
 
-The policy associated with this advantage changes with order-flow composition. At $\kappa=0.1$, the volatility hook and \texttt{DAHook} outperform the baseline in high-volatility, 5-gwei windows by (308,[32,742]) and (246,[59,563]) USDT, respectively. At $\kappa=0.03$, the volatility hook retains an advantage in high-volatility windows across all three gas scenarios. These subgroup results are exploratory and should not be interpreted as universal policy rankings.
+The policy associated with this advantage changes with order-flow composition. At $\kappa=0.1$, the \texttt{VolatilityHook} and \texttt{DAHook} outperform the baseline in high-volatility, 5-gwei windows by (308,[32,742]) and (246,[59,563]) USDT, respectively. At $\kappa=0.03$, the \texttt{VolatilityHook} retains an advantage in high-volatility windows across all three gas scenarios. These subgroup results are exploratory and should not be interpreted as universal policy rankings.
 
 \begin{figure*}[t]
   \centering
