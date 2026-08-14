@@ -87,7 +87,7 @@ def main() -> None:
         ax.annotate(
             f"κ = {kappa:g} · {daily_label}/day · arb {arb}\n{kind}",
             (24.15, v[-1]),
-            fontsize=5.8,
+            fontsize=6.4,
             color=INK if emphasis else INK_MUTED,
             va="center",
             ha="left",
@@ -99,28 +99,18 @@ def main() -> None:
     top = 3.0 * BASKET * shape.max()
     ax.set_ylim(0.03 * BASKET * shape.min() * 0.55, top * 3.2)
     for x, txt in [(3.2, "Asia (quiet)"), (15.8, "US session")]:
-        ax.annotate(txt, (x, top * 1.9), fontsize=6, color=INK_MUTED, ha="center")
+        ax.annotate(txt, (x, top * 1.9), fontsize=6.8, color=INK, ha="center")
 
     ax.set_yscale("log")
     ax.set_xlim(0, 24)
     ax.set_xticks(range(0, 25, 6))
-    ax.set_xticklabels([f"{h:02d}:00" for h in range(0, 25, 6)], fontsize=7)
-    ax.set_xlabel("time of day (UTC)", fontsize=7.5, color=INK_MUTED)
-    ax.set_ylabel("potential retail demand, USDT/min", fontsize=7.5, color=INK_MUTED)
-    ax.tick_params(colors=INK_MUTED, labelsize=7)
-    ax.grid(axis="y", color=GRID, linewidth=0.5)
+    ax.set_xticklabels([f"{h:02d}:00" for h in range(0, 25, 6)], fontsize=7.5)
+    ax.set_xlabel("time of day (UTC)", fontsize=8, color=INK)
+    ax.set_ylabel("potential retail demand, USDT/min", fontsize=8, color=INK)
+    ax.tick_params(labelsize=7.5)
+    ax.grid(axis="y", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
     ax.set_axisbelow(True)
-    for spine in ["top", "right"]:
-        ax.spines[spine].set_visible(False)
-    for spine in ["left", "bottom"]:
-        ax.spines[spine].set_color(GRID)
 
-    ax.set_title(
-        "One measured shape, one scale knob:\n"
-        r"$v_0(c) = \kappa \cdot \mathrm{basket} \cdot \hat{s}(c)$",
-        fontsize=8.5,
-        color=INK,
-    )
     fig.tight_layout()
     # room for the right-edge labels
     fig.subplots_adjust(right=0.64)
@@ -132,10 +122,7 @@ def main() -> None:
         }
     )
     out = ROOT / "paper" / "Image" / "uu_demand_calibration.pdf"
-    with figure_note(
-        "shape: median 2024 day of the ETH/SHIB legs (Binance quote volume, "
-        "geometric mean), normalised to one basket/day at κ = 1; arb shares as measured"
-    ):
+    with figure_note(None):
         _save(fig, out, table=table)
     print(f"written: {out} (+ .csv)")
 

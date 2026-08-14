@@ -50,12 +50,8 @@ def load_swaps(policy: str):
 
 def _style(ax):
     ax.set_facecolor(SURFACE)
-    for spine in ["top", "right"]:
-        ax.spines[spine].set_visible(False)
-    for spine in ["left", "bottom"]:
-        ax.spines[spine].set_color(GRID)
-    ax.tick_params(colors=INK_MUTED, labelsize=7)
-    ax.grid(True, axis="y", color=GRID, linewidth=0.6, zorder=0)
+    ax.tick_params(labelsize=8)
+    ax.grid(True, axis="y", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)), zorder=0)
     ax.set_axisbelow(True)
 
 
@@ -78,13 +74,8 @@ def main() -> None:
     fig.patch.set_facecolor(SURFACE)
 
     hours = prices.index / 60.0
-    axes[0].plot(hours, prices.to_numpy(), color=INK_MUTED, linewidth=1.3, zorder=3)
+    axes[0].plot(hours, prices.to_numpy(), color=INK, linewidth=1.3, zorder=3)
     axes[0].set_ylabel("price,\nindexed", fontsize=7.5, color=INK)
-    axes[0].set_title(
-        "external token1-per-token0 price, indexed to the window open",
-        fontsize=8,
-        color=INK,
-    )
     _style(axes[0])
 
     records = []
@@ -95,7 +86,7 @@ def main() -> None:
         ba = [s["feeBA"] / 100.0 for s in swaps]
         hrs = [c / 60.0 for c in candles]
 
-        ax.axhline(30, color=INK_MUTED, linewidth=0.8, linestyle=(0, (4, 3)), zorder=2)
+        ax.axhline(30, color=INK, linewidth=0.8, linestyle=(0, (4, 3)), zorder=2)
         ax.plot(
             hrs,
             ab,
@@ -123,7 +114,7 @@ def main() -> None:
             policy,
             (0.012, 0.93),
             xycoords="axes fraction",
-            fontsize=7.5,
+            fontsize=8.5,
             color=INK,
             va="top",
             zorder=5,
@@ -135,17 +126,14 @@ def main() -> None:
             for c, a, b in zip(candles, ab, ba)
         ]
 
-    axes[1].legend(loc="lower left", frameon=False, fontsize=6.5, ncol=2)
-    axes[-1].set_xlabel("hours into the window", fontsize=8, color=INK)
-    fig.supylabel("applied fee by direction, basis points (log)", fontsize=8, color=INK)
+    axes[1].legend(loc="lower left", frameon=True, fontsize=8, ncol=2)
+    axes[-1].set_xlabel("hours into the window", fontsize=9, color=INK)
+    fig.supylabel("applied fee by direction, basis points (log)", fontsize=9, color=INK)
     fig.align_ylabels()
     fig.tight_layout()
 
     out = ROOT / "paper" / "Image" / "uu_fee_response.pdf"
-    with figure_note(
-        "one high-volatility ETH/SHIB window (2024-03-01), 20 gwei, κ = 1 traces; "
-        "dashed = the 30 bps baseline; symmetric policies show one line"
-    ):
+    with figure_note(None):
         _save(fig, out, pd.DataFrame(records))
     print(f"written: {out} (+ .csv)")
 

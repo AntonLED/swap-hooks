@@ -93,17 +93,13 @@ def main() -> None:
         ax.plot(hours, prof["median"] / 1e3, color=ACCENT, linewidth=1.8)
         # The assumed flat mean at kappa=1: 20M / 1440 minutes.
         ax.axhline(
-            20_000 / 1.44 / 1e3, color=INK_MUTED, linewidth=1.0, linestyle=(0, (4, 3))
+            20_000 / 1.44 / 1e3, color=INK, linewidth=1.0, linestyle=(0, (4, 3))
         )
 
         ax.set_ylabel(f"{pair}\nkUSDT / min", fontsize=8.5, color=INK)
-        ax.grid(axis="both", color=GRID, linewidth=0.6)
+        ax.grid(axis="both", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
         ax.set_axisbelow(True)
-        for spine in ["top", "right"]:
-            ax.spines[spine].set_visible(False)
-        for spine in ["left", "bottom"]:
-            ax.spines[spine].set_color(GRID)
-        ax.tick_params(colors=INK_MUTED, labelsize=8)
+        ax.tick_params(labelsize=8)
         ax.set_xlim(0, 24)
         ax.margins(y=0.1)
 
@@ -112,11 +108,11 @@ def main() -> None:
         (0.02, 0.86),
         xycoords="axes fraction",
         fontsize=8,
-        color=INK_MUTED,
+        color=INK,
     )
     axes[-1].set_xticks(range(0, 25, 4))
     axes[-1].set_xticklabels([f"{h:02d}:00" for h in range(0, 25, 4)])
-    axes[-1].set_xlabel("time of day, UTC", fontsize=9, color=INK_MUTED)
+    axes[-1].set_xlabel("time of day, UTC", fontsize=9, color=INK)
 
     fig.suptitle(
         "V_profile(c): the measured intraday shape of potential retail demand\n"

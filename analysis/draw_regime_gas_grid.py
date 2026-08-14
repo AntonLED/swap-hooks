@@ -36,6 +36,7 @@ from experiments.figures import (
     GRID,
     INK,
     INK_MUTED,
+    NEUTRAL,
     SURFACE,
     _save,
     figure_note,
@@ -116,7 +117,7 @@ def main() -> None:
     drawn = table[table["valuation"] == "net_result_delta"]
 
     fig, axes = plt.subplots(
-        len(REGIMES), len(GAS), figsize=(9.2, 6.8), sharex=True, sharey=True
+        len(REGIMES), len(GAS), figsize=(5.3, 4.5), sharex=True, sharey=True
     )
     fig.patch.set_facecolor(SURFACE)
 
@@ -125,13 +126,13 @@ def main() -> None:
         for j, gas in enumerate(GAS):
             ax = axes[i][j]
             ax.set_facecolor(SURFACE)
-            ax.axvline(0, color=INK_MUTED, linewidth=1.0, zorder=1)
+            ax.axvline(0, color="black", linewidth=0.7, zorder=1)
             panel = drawn[(drawn["regime"] == regime) & (drawn["gas_price_wei"] == gas)]
             for policy, y in zip(HOOKS, ys):
                 row = panel[panel["policy"] == policy].iloc[0]
                 wins = row["ci_low"] > 0
                 loses = row["ci_high"] < 0
-                colour = ACCENT if wins else (ACCENT_ALT if loses else INK_MUTED)
+                colour = ACCENT if wins else (ACCENT_ALT if loses else NEUTRAL)
                 # The interval decides the fill, same convention as
                 # uu_operating_points: filled = excludes zero.
                 filled = wins or loses
@@ -139,7 +140,7 @@ def main() -> None:
                     [row["ci_low"], row["ci_high"]],
                     [y, y],
                     color=colour,
-                    linewidth=2.0,
+                    linewidth=1.6,
                     solid_capstyle="round",
                     zorder=2,
                 )
@@ -147,46 +148,39 @@ def main() -> None:
                     row["median"],
                     y,
                     marker="o",
-                    markersize=6.5,
+                    markersize=5.0,
                     markerfacecolor=colour if filled else SURFACE,
                     markeredgecolor=colour,
-                    markeredgewidth=1.4,
+                    markeredgewidth=1.1,
                     zorder=3,
                 )
-            ax.grid(axis="x", color=GRID, linewidth=0.7)
+            ax.grid(axis="x", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
             ax.set_axisbelow(True)
-            for spine in ["top", "right", "left"]:
-                ax.spines[spine].set_visible(False)
-            ax.spines["bottom"].set_color(GRID)
-            ax.tick_params(colors=INK_MUTED, labelsize=8)
+            ax.tick_params(labelsize=9)
+            ax.xaxis.set_major_locator(plt.MaxNLocator(4))
+            ax.xaxis.set_major_formatter(
+                plt.FuncFormatter(lambda v, _: f"{v / 1000:g}k" if v else "0")
+            )
             if j == 0:
                 ax.set_yticks(ys)
-                ax.set_yticklabels(HOOKS, fontsize=8.5, color=INK)
+                ax.set_yticklabels(HOOKS, fontsize=9.5, color=INK)
                 ax.set_ylabel(
-                    f"{regime} volatility", fontsize=9.5, color=INK, labelpad=8
+                    f"{regime} volatility", fontsize=10.5, color=INK, labelpad=8
                 )
             if i == 0:
-                ax.set_title(f"{gas // 10**9} gwei", fontsize=10, color=INK)
+                ax.set_title(f"{gas // 10**9} gwei", fontsize=10.5, color=INK)
             if i == len(REGIMES) - 1 and j == 1:
                 ax.set_xlabel(
-                    "median Δ vs static 30 bps, USDT/window",
-                    fontsize=8.5,
-                    color=INK_MUTED,
+                    "median Δ vs static 30 bps, USDT/window (k = thousands)",
+                    fontsize=9.5,
+                    color=INK,
                 )
             ax.margins(y=0.18)
 
-    fig.suptitle(
-        "Where adaptation pays: paired advantage over the 30 bps baseline, "
-        "by volatility regime × gas scenario\n"
-        "(volatile pairs pooled, 48 windows per panel; filled marker = 95% CI excludes zero: "
-        "blue = beats the baseline, orange = loses to it)",
-        fontsize=10,
-        color=INK,
-    )
-    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.tight_layout()
 
     out = ROOT / "paper" / "Image" / f"{SETTINGS['prefix']}regime_gas_grid.pdf"
-    with figure_note(SETTINGS["note"]):
+    with figure_note(None):
         _save(fig, out, table=table)
     print(f"written: {out} (+ .csv)")
 
@@ -255,7 +249,7 @@ def main_relative() -> None:
     table = pd.DataFrame(rows)
 
     fig, axes = plt.subplots(
-        len(REGIMES), len(GAS), figsize=(9.2, 6.8), sharex=True, sharey=True
+        len(REGIMES), len(GAS), figsize=(5.3, 4.5), sharex=True, sharey=True
     )
     fig.patch.set_facecolor(SURFACE)
 
@@ -264,7 +258,7 @@ def main_relative() -> None:
         for j, gas in enumerate(GAS):
             ax = axes[i][j]
             ax.set_facecolor(SURFACE)
-            ax.axvline(0, color=INK_MUTED, linewidth=1.0, zorder=1)
+            ax.axvline(0, color="black", linewidth=0.7, zorder=1)
             panel = table[(table["regime"] == regime) & (table["gas_price_wei"] == gas)]
             for policy, y in zip(HOOKS, ys):
                 row = panel[panel["policy"] == policy].iloc[0]
@@ -272,13 +266,13 @@ def main_relative() -> None:
                     continue  # non-positive baseline: panel entry absent by rule
                 wins = row["ci_low_pct"] > 0
                 loses = row["ci_high_pct"] < 0
-                colour = ACCENT if wins else (ACCENT_ALT if loses else INK_MUTED)
+                colour = ACCENT if wins else (ACCENT_ALT if loses else NEUTRAL)
                 filled = wins or loses
                 ax.plot(
                     [row["ci_low_pct"], row["ci_high_pct"]],
                     [y, y],
                     color=colour,
-                    linewidth=2.0,
+                    linewidth=1.6,
                     solid_capstyle="round",
                     zorder=2,
                 )
@@ -286,45 +280,36 @@ def main_relative() -> None:
                     row["median_pct"],
                     y,
                     marker="o",
-                    markersize=6.5,
+                    markersize=5.0,
                     markerfacecolor=colour if filled else SURFACE,
                     markeredgecolor=colour,
-                    markeredgewidth=1.4,
+                    markeredgewidth=1.1,
                     zorder=3,
                 )
-            ax.grid(axis="x", color=GRID, linewidth=0.7)
+            ax.grid(axis="x", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
             ax.set_axisbelow(True)
-            for spine in ["top", "right", "left"]:
-                ax.spines[spine].set_visible(False)
-            ax.spines["bottom"].set_color(GRID)
-            ax.tick_params(colors=INK_MUTED, labelsize=8)
+            ax.tick_params(labelsize=9)
+            ax.xaxis.set_major_locator(plt.MaxNLocator(4))
             if j == 0:
                 ax.set_yticks(ys)
-                ax.set_yticklabels(HOOKS, fontsize=8.5, color=INK)
+                ax.set_yticklabels(HOOKS, fontsize=9.5, color=INK)
                 ax.set_ylabel(
-                    f"{regime} volatility", fontsize=9.5, color=INK, labelpad=8
+                    f"{regime} volatility", fontsize=10.5, color=INK, labelpad=8
                 )
             if i == 0:
-                ax.set_title(f"{gas // 10**9} gwei", fontsize=10, color=INK)
+                ax.set_title(f"{gas // 10**9} gwei", fontsize=10.5, color=INK)
             if i == len(REGIMES) - 1 and j == 1:
                 ax.set_xlabel(
                     "median Δ, % of panel's median baseline result",
-                    fontsize=8.5,
-                    color=INK_MUTED,
+                    fontsize=9.5,
+                    color=INK,
                 )
             ax.margins(y=0.18)
 
-    fig.suptitle(
-        "The same grid, normalised: paired advantage as % of each panel's median baseline result\n"
-        "(volatile pairs pooled, 48 windows per panel; filled marker = 95% CI excludes zero: "
-        "blue = beats the baseline, orange = loses to it)",
-        fontsize=10,
-        color=INK,
-    )
-    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.tight_layout()
 
     out = ROOT / "paper" / "Image" / f"{SETTINGS['prefix']}regime_gas_grid_rel.pdf"
-    with figure_note(SETTINGS["note"]):
+    with figure_note(None):
         _save(fig, out, table=table)
     print(f"written: {out} (+ .csv)")
 

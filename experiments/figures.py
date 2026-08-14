@@ -21,24 +21,53 @@ from pathlib import Path
 
 import matplotlib
 
-matplotlib.use("Agg")
+try:  # inside IPython/Jupyter keep whatever backend %matplotlib chose
+    get_ipython()  # type: ignore[name-defined]  # noqa: F821
+except NameError:
+    matplotlib.use("Agg")
+
+# The LaTeX look, without a LaTeX dependency: STIX is metrically and
+# visually a Times clone (what IEEEtran sets the paper in), and mathtext
+# rendered in the same face makes $\kappa$, subscripts and minus signs
+# match the surrounding text exactly.
+matplotlib.rcParams.update(
+    {
+        "font.family": "serif",
+        "font.serif": ["STIXGeneral", "STIX Two Text", "Times New Roman"],
+        "mathtext.fontset": "stix",
+        # The pgfplots anatomy: a closed frame, ticks pointing inward and
+        # mirrored on all four sides, a framed legend.
+        "axes.linewidth": 0.6,
+        "axes.edgecolor": "black",
+        "xtick.direction": "in",
+        "ytick.direction": "in",
+        "xtick.top": True,
+        "ytick.right": True,
+        "xtick.major.size": 3.2,
+        "ytick.major.size": 3.2,
+        "legend.frameon": True,
+        "legend.fancybox": False,
+        "legend.framealpha": 1.0,
+        "legend.edgecolor": "black",
+    }
+)
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from experiments.events import FEE_BOXES_BPS, applied_fees
 
-# Validated against SURFACE with the dataviz skill's six-check script:
-#   node scripts/validate_palette.js "#2a78d6,#eb6834" --mode light
-# All six pass -- lightness band, chroma floor, CVD separation (worst adjacent
-# pair dE 24.7 protan / 32.7 tritan), normal-vision floor 33.6, contrast >= 3:1.
-# Re-run it if you change a colour; do not reason about dE by eye.
-ACCENT = "#2a78d6"
-ACCENT_ALT = "#eb6834"
-INK = "#0b0b0b"
-INK_MUTED = "#52514e"
-GRID = "#d8d7d2"
-SURFACE = "#fcfcfb"
+# The pgfplots-look palette of 2026-08-14: restrained dark blue / brick red
+# (win / loss), matching native TikZ figures in an IEEEtran page. The original
+# pair ("#2a78d6"/"#eb6834") passed the dataviz palette checker; this darker
+# pair keeps larger lightness separation from both white and the neutral grey.
+ACCENT = "#1f4e9c"
+ACCENT_ALT = "#c0392b"
+INK = "#000000"
+INK_MUTED = "#333333"  # secondary text; still near-black, the pgfplots way
+NEUTRAL = "#6a6a6a"  # interval covers zero
+GRID = "#cccccc"
+SURFACE = "#ffffff"
 
 REGIME_ORDER = ["low", "mid", "high"]
 

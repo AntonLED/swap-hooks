@@ -30,6 +30,7 @@ from experiments.figures import (
     GRID,
     INK,
     INK_MUTED,
+    NEUTRAL,
     SURFACE,
     _save,
     figure_note,
@@ -71,18 +72,18 @@ def main() -> None:
     table = pd.DataFrame(rows)
     drawn = table[table["valuation"] == "net_result_delta"]
 
-    fig, axes = plt.subplots(len(HOOKS), 1, figsize=(7.4, 9.2), sharex=True)
+    fig, axes = plt.subplots(len(HOOKS), 1, figsize=(4.9, 6.6), sharex=True)
     fig.patch.set_facecolor(SURFACE)
 
     for ax, policy in zip(axes, HOOKS):
         ax.set_facecolor(SURFACE)
-        ax.axhline(0, color=INK_MUTED, linewidth=1.0, zorder=1)
+        ax.axhline(0, color="black", linewidth=0.7, zorder=1)
         sub = drawn[drawn["policy"] == policy].sort_values("kappa")
         ax.plot(sub["kappa"], sub["median"], color=GRID, linewidth=1.2, zorder=2)
         for _, r in sub.iterrows():
             wins = r["ci_low"] > 0
             loses = r["ci_high"] < 0
-            colour = ACCENT if wins else (ACCENT_ALT if loses else INK_MUTED)
+            colour = ACCENT if wins else (ACCENT_ALT if loses else NEUTRAL)
             ax.plot(
                 [r["kappa"], r["kappa"]],
                 [r["ci_low"], r["ci_high"]],
@@ -95,47 +96,42 @@ def main() -> None:
                 r["kappa"],
                 r["median"],
                 marker="o",
-                markersize=6.5,
+                markersize=5.0,
                 markerfacecolor=colour if (wins or loses) else SURFACE,
                 markeredgecolor=colour,
-                markeredgewidth=1.4,
+                markeredgewidth=1.1,
                 zorder=4,
             )
         ax.set_xscale("log")
-        ax.set_ylabel(policy, fontsize=8.5, color=INK)
-        ax.grid(axis="y", color=GRID, linewidth=0.6)
+        ax.set_ylabel(policy, fontsize=9.5, color=INK)
+        ax.grid(axis="y", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
         ax.set_axisbelow(True)
-        for spine in ["top", "right"]:
-            ax.spines[spine].set_visible(False)
-        for spine in ["left", "bottom"]:
-            ax.spines[spine].set_color(GRID)
-        ax.tick_params(colors=INK_MUTED, labelsize=8)
-        ax.margins(y=0.25)
+        ax.tick_params(labelsize=9)
+        ax.yaxis.set_major_formatter(
+            plt.FuncFormatter(lambda v, _: f"{v / 1000:g}k" if v else "0")
+        )
+        ax.margins(y=0.32)
 
     axes[-1].set_xticks([lv for lv, _ in LEVELS])
     axes[-1].set_xticklabels(
-        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=8
+        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=9
     )
     axes[-1].set_xlabel(
         "κ — retail turnover, baskets/day (arbitrage share of volume beneath)",
-        fontsize=9,
-        color=INK_MUTED,
-    )
-    axes[-1].minorticks_off()
-
-    fig.suptitle(
-        "Advantage over the static 30 bps baseline across the retail scale κ\n"
-        "(median over 18 volatile-pair strata, 95% bootstrap CI; filled = CI excludes zero: "
-        "blue wins, orange loses)",
-        fontsize=10,
+        fontsize=9.5,
         color=INK,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    axes[-1].minorticks_off()
+    fig.supylabel(
+        "median Δ vs static 30 bps, USDT/window (k = thousands)",
+        fontsize=9.5,
+        color=INK,
+    )
+
+    fig.tight_layout()
 
     out = ROOT / "paper" / "Image" / "uu_kappa_trend.pdf"
-    with figure_note(
-        "five full matrices, 5,832 cells each, post gas-fix harness of 2026-08-12"
-    ):
+    with figure_note(None):
         _save(fig, out, table=table)
     print(f"written: {out} (+ .csv)")
 
@@ -184,13 +180,13 @@ def main_high() -> None:
                 )
     table = pd.DataFrame(rows)
 
-    fig, axes = plt.subplots(len(HOOKS), 1, figsize=(7.4, 9.6), sharex=True)
+    fig, axes = plt.subplots(len(HOOKS), 1, figsize=(4.9, 6.8), sharex=True)
     fig.patch.set_facecolor(SURFACE)
 
     offsets = {GAS[0]: 0.88, GAS[1]: 1.0, GAS[2]: 1.14}  # de-overlap on log x
     for ax, policy in zip(axes, HOOKS):
         ax.set_facecolor(SURFACE)
-        ax.axhline(0, color=INK_MUTED, linewidth=1.0, zorder=1)
+        ax.axhline(0, color="black", linewidth=0.7, zorder=1)
         for gas in GAS:
             sub = table[
                 (table["policy"] == policy) & (table["gas_price_wei"] == gas)
@@ -218,29 +214,34 @@ def main_high() -> None:
                     x,
                     r["median"],
                     marker="o",
-                    markersize=6,
+                    markersize=5.0,
                     markerfacecolor=SCENARIO_COLOUR[gas] if filled else SURFACE,
                     markeredgecolor=SCENARIO_COLOUR[gas],
-                    markeredgewidth=1.3,
+                    markeredgewidth=1.1,
                     zorder=4,
                 )
         ax.set_xscale("log")
-        ax.set_ylabel(policy, fontsize=8.5, color=INK)
-        ax.grid(axis="y", color=GRID, linewidth=0.6)
+        ax.set_ylabel(policy, fontsize=9.5, color=INK)
+        ax.grid(axis="y", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
         ax.set_axisbelow(True)
-        for spine in ["top", "right"]:
-            ax.spines[spine].set_visible(False)
-        for spine in ["left", "bottom"]:
-            ax.spines[spine].set_color(GRID)
-        ax.tick_params(colors=INK_MUTED, labelsize=8)
-        ax.margins(y=0.25)
+        ax.tick_params(labelsize=9)
+        ax.yaxis.set_major_formatter(
+            plt.FuncFormatter(lambda v, _: f"{v / 1000:g}k" if v else "0")
+        )
+        ax.margins(y=0.32)
 
     axes[-1].set_xticks([lv for lv, _ in LEVELS])
     axes[-1].set_xticklabels(
-        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=8
+        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=9
     )
-    axes[-1].set_xlabel("κ — retail turnover, baskets/day", fontsize=9, color=INK_MUTED)
+    axes[-1].set_xlabel("κ — retail turnover, baskets/day", fontsize=9, color=INK)
     axes[-1].minorticks_off()
+    fig.supylabel(
+        "median Δ vs static 30 bps in high-volatility windows, "
+        "USDT/window (k = thousands)",
+        fontsize=9,
+        color=INK,
+    )
 
     handles = [
         plt.Line2D(
@@ -255,20 +256,12 @@ def main_high() -> None:
         )
         for g in GAS
     ]
-    axes[0].legend(handles=handles, loc="upper right", frameon=False, fontsize=8)
+    axes[0].legend(handles=handles, loc="upper right", frameon=True, fontsize=9)
 
-    fig.suptitle(
-        "The storm slice: advantage over static 30 bps in HIGH-volatility windows, by κ and gas\n"
-        "(volatile pairs pooled, 48 windows per point, 95% bootstrap CI; filled = CI excludes zero)",
-        fontsize=10,
-        color=INK,
-    )
-    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    fig.tight_layout()
 
     out = ROOT / "paper" / "Image" / "uu_kappa_trend_high.pdf"
-    with figure_note(
-        "five full matrices, post gas-fix harness of 2026-08-12; high-volatility tercile only"
-    ):
+    with figure_note(None):
         _save(fig, out, table=table)
     print(f"written: {out} (+ .csv)")
 

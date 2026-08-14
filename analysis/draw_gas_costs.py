@@ -106,13 +106,10 @@ def main() -> None:
         fontsize=9,
         color=INK,
     )
-    ax.set_xlabel("cost of one swap, USD (log scale)", fontsize=9, color=INK_MUTED)
-    ax.grid(axis="x", color=GRID, linewidth=0.7)
+    ax.set_xlabel("cost of one swap, USD (log scale)", fontsize=9, color=INK)
+    ax.grid(axis="x", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
     ax.set_axisbelow(True)
-    for spine in ["top", "right", "left"]:
-        ax.spines[spine].set_visible(False)
-    ax.spines["bottom"].set_color(GRID)
-    ax.tick_params(colors=INK_MUTED, labelsize=8.5)
+    ax.tick_params(labelsize=8.5)
 
     # Secondary axis: the same dollars as a share of a typical retail trade.
     top = ax.secondary_xaxis(
@@ -128,9 +125,9 @@ def main() -> None:
         f"…as basis points of a ${REFERENCE_TRADE_USD:,} retail trade "
         "(the fee box tops out at 100 bps)",
         fontsize=8.5,
-        color=INK_MUTED,
+        color=INK,
     )
-    top.tick_params(colors=INK_MUTED, labelsize=8)
+    top.tick_params(labelsize=8)
     top.spines["top"].set_color(GRID)
 
     handles = [
@@ -146,7 +143,7 @@ def main() -> None:
         )
         for g in GAS_GWEI
     ]
-    ax.legend(handles=handles, loc="upper right", frameon=False, fontsize=8.5)
+    ax.legend(handles=handles, loc="upper right", frameon=True, fontsize=8.5)
 
     ax.set_title(
         "What one swap costs in gas: measured per-policy execution (Forge EVM) "
