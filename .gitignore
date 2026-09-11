@@ -77,3 +77,12 @@ learning/
 dex/
 
 results*/
+# Foundry (once `forge install` / `forge build` land here)
+cache/
+out/
+broadcast/*/31337/
+broadcast/**/dry-run/
+lib/
+
+# Personal learning notes (not part of the paper)
+learning/
