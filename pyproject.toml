@@ -5,8 +5,37 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "ipympl>=0.10.0",
     "jupyter>=1.1.1",
     "matplotlib>=3.11.1",
     "numpy>=2.5.1",
+    "pandas>=3.0.5",
+    "pyarrow>=25.0.0",
     "requests>=2.34.2",
+    "scipy>=1.18.0",
+]
+
+[dependency-groups]
+dev = [
+    "mpmath>=1.4.1",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["slow: drives a full replay window through forge"]
+# RUNNING.md has always said `uv run pytest -q` excludes the slow tests, and
+# nothing implemented it. That is not a documentation nit: the slow tests drive
+# `run_one`, which writes the shared trace files in `data/`, so running them
+# while the matrix is running corrupts live cells with deterministic-looking
+# but wrong numbers (PROGRESS.md, "Traps discovered this session"). An explicit
+# `-m slow` on the command line still wins, so `uv run pytest -q -m slow`
+# behaves exactly as documented.
+addopts = ["-m", "not slow"]
+
+[tool.ruff]
+exclude = [
+    "dex", 
+    "contracts",
 ]

@@ -35,7 +35,13 @@ mlruns/
 mlartifacts/
 mlflow.db
 
-# --- Foundry-installed Solidity deps -----------------------------------------
+# --- Solidity ----------------------------------------------------------------
+# `forge fmt` owns .sol, not Prettier. The old .prettierrc named a "slang"
+# parser that ships with prettier-plugin-solidity, which was never installed
+# here -- it came from adaptive-liquidity, which (see the header above) kept
+# Prettier away from Solidity too. It stayed quiet until contracts/ existed and
+# then broke `npm run format` outright.
+*.sol
 lib/
 
 # --- Research data / results (don't reformat data files) ---------------------
@@ -53,6 +59,13 @@ research/ETH_1hour/
 *.synctex.gz
 *.fdb_latexmk
 *.fls
+
+# --- Generated JSON -----------------------------------------------------------
+# Written by calibrate_gas / the golden fixture writer with indent=2, while the
+# .prettierrc JSON override asks for 4. Left formattable, each regeneration and
+# each `npm run format` would undo the other forever.
+experiments/gas_estimates.json
+tests/golden/
 
 # --- Lockfiles / generated ----------------------------------------------------
 package-lock.json

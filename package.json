@@ -3,6 +3,9 @@
         "prettier": "^3.9.6"
     },
     "scripts": {
-        "format": "prettier --write ."
+        "format": "npm run format:prettier && npm run format:sol && npm run format:python",
+        "format:prettier": "prettier --write .",
+        "format:sol": "forge fmt --root contracts",
+        "format:python": "ruff format . && ruff check ."
     }
 }

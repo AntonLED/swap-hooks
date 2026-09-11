@@ -1,9 +1,11 @@
 \begin{thebibliography}{10}
 
 \bibitem{werner2022sok}
-Sam~M. Werner, Daniel Perez, Lewis Gudgeon, Ariah Klages-Mundt, Dominik Harz, and William~J. Knottenbelt.
+Sam~M. Werner, Daniel Perez, Lewis Gudgeon, Ariah Klages-Mundt, Dominik Harz,
+  and William~J. Knottenbelt.
 \newblock {SoK}: Decentralized finance ({DeFi}).
-\newblock In {\em Proc. 4th ACM Conf. Advances in Financial Technologies}, pages 30--46, 2022.
+\newblock In {\em Proc. 4th ACM Conf. Advances in Financial Technologies},
+  pages 30--46, 2022.
 
 \bibitem{angeris2019analysis}
 Guillermo Angeris, Hsien-Tang Kao, Rei Chiang, Charlie Noyes, and Tarun Chitra.
@@ -11,7 +13,8 @@ Guillermo Angeris, Hsien-Tang Kao, Rei Chiang, Charlie Noyes, and Tarun Chitra.
 
 \bibitem{angeris2022multiasset}
 Guillermo Angeris, Akshay Agrawal, Alex Evans, Tarun Chitra, and Stephen Boyd.
-\newblock Constant function market makers: Multi-asset trades via convex optimization.
+\newblock Constant function market makers: Multi-asset trades via convex
+  optimization.
 \newblock In {\em Handbook on Blockchain}, pages 415--444. Springer, 2022.
 
 \bibitem{adams2020uniswap}
@@ -29,22 +32,27 @@ Jason Milionis, Ciamac~C. Moallemi, Tim Roughgarden, and Anthony~Lee Zhang.
 \newblock Automated market making and loss-versus-rebalancing, 2022.
 
 \bibitem{fan2021strategic}
-Zhou Fan, Francisco Marmolejo-Cossio, Daniel~J. Moroz, Michael Neuder, Rithvik Rao, and David~C. Parkes.
+Zhou Fan, Francisco Marmolejo-Cossio, Daniel~J. Moroz, Michael Neuder, Rithvik
+  Rao, and David~C. Parkes.
 \newblock Strategic liquidity provision in uniswap v3, 2021.
 
 \bibitem{Vlasov2025Impact}
 Roman Vlasov, Vladimir Gorgadze, and Artem Barger.
-\newblock The {Impact} of the {Exchange} {Fees} on {Impermanent} {Loss} of {Liquidity} {Providers} for {Conservative} {Automated} {Market} {Makers}.
+\newblock The {Impact} of the {Exchange} {Fees} on {Impermanent} {Loss} of
+  {Liquidity} {Providers} for {Conservative} {Automated} {Market} {Makers}.
 \newblock {\em The Journal of The British Blockchain Association}, may 27 2025.
 
 \bibitem{Fritsch_2021}
 Robin Fritsch.
 \newblock A note on optimal fees for constant function market makers.
-\newblock In {\em Proceedings of the 2021 ACM CCS Workshop on Decentralized Finance and Security}, CCS ’21, page 9–14. ACM, November 2021.
+\newblock In {\em Proceedings of the 2021 ACM CCS Workshop on Decentralized
+  Finance and Security}, CCS ’21, page 9–14. ACM, November 2021.
 
 \bibitem{lebedeva2025dynamic}
-Irina Lebedeva, Dmitrii Umnov, Yury Yanovich, Ignat Melnikov, and George Ovchinnikov.
-\newblock Dynamic fee for reducing impermanent loss in decentralized exchanges, 2025.
+Irina Lebedeva, Dmitrii Umnov, Yury Yanovich, Ignat Melnikov, and George
+  Ovchinnikov.
+\newblock Dynamic fee for reducing impermanent loss in decentralized exchanges,
+  2025.
 
 \bibitem{baggiani2025optimal}
 Leonardo Baggiani, Martin Herdegen, and Leandro S{\'a}nchez-Betancourt.
@@ -52,11 +60,13 @@ Leonardo Baggiani, Martin Herdegen, and Leandro S{\'a}nchez-Betancourt.
 
 \bibitem{campbell2025optimal}
 Steven Campbell, Philippe Bergault, Jason Milionis, and Marcel Nutz.
-\newblock Optimal fees for liquidity provision in automated market makers, 2025.
+\newblock Optimal fees for liquidity provision in automated market makers,
+  2025.
 
 \bibitem{dinosse2026dynamic}
 Daniele Maria~Di Nosse and Fabrizio Lillo.
-\newblock Mitigating adverse selection in concentrated liquidity {AMM}s with dynamic fees: An agent-based model approach, 2026.
+\newblock Mitigating adverse selection in concentrated liquidity {AMM}s with
+  dynamic fees: An agent-based model approach, 2026.
 
 \bibitem{adams2024uniswapv4}
 Hayden Adams, Noah Zinsmeister, Moody Salem, River Keefer, and Dan Robinson.
@@ -72,12 +82,16 @@ Hayden Adams, Noah Zinsmeister, Moody Salem, River Keefer, and Dan Robinson.
 \bibitem{angeris2020improved}
 Guillermo Angeris and Tarun Chitra.
 \newblock Improved price oracles: Constant function market makers.
-\newblock In {\em Proc. 2nd ACM Conf. Advances in Financial Technologies}, pages 80--91, 2020.
+\newblock In {\em Proc. 2nd ACM Conf. Advances in Financial Technologies},
+  pages 80--91, 2020.
 
 \bibitem{melnikov2026impermanent_gain}
-Ignat Melnikov, Roman Vlasov, Vladimir Gorgadze, Andrey Seoev, and Yury Yanovich.
-\newblock From impermanent loss to sustainable gain: Quantifying profitability zones for liquidity providers on dex.
-\newblock In {\em IEEE International Conference on Blockchain and Cryptocurrency (ICBC)}, 2026.
+Ignat Melnikov, Roman Vlasov, Vladimir Gorgadze, Andrey Seoev, and Yury
+  Yanovich.
+\newblock From impermanent loss to sustainable gain: Quantifying profitability
+  zones for liquidity providers on dex.
+\newblock In {\em IEEE International Conference on Blockchain and
+  Cryptocurrency (ICBC)}, 2026.
 \newblock to appear.
 
 \bibitem{uniswapHooksDocs}
@@ -104,44 +118,24 @@ Ignat Melnikov, Roman Vlasov, Vladimir Gorgadze, Andrey Seoev, and Yury Yanovich
 \newblock Developer documentation, 2026.
 \newblock Accessed: 2026-07-17.
 
-\bibitem{foundryBook}
-{Foundry Contributors}.
-\newblock Foundry documentation: Forge.
-\newblock Developer documentation, 2026.
-\newblock Accessed: 2026-07-17.
-
-\bibitem{anvilBook}
-{Foundry Contributors}.
-\newblock Foundry documentation: Anvil.
-\newblock Developer documentation, 2026.
-\newblock Accessed: 2026-07-17.
-
-\bibitem{flaskDocs}
-{Pallets Projects}.
-\newblock Flask documentation.
-\newblock Developer documentation, 2026.
-\newblock Accessed: 2026-07-17.
-
 \bibitem{uniswapSecurityFramework}
 {Uniswap Labs}.
 \newblock Uniswap v4 security framework.
 \newblock Developer documentation, 2026.
 \newblock Accessed: 2026-07-17.
 
-\bibitem{binanceKlines}
-{Binance}.
-\newblock Spot {API}: Kline/candlestick data.
-\newblock Developer documentation, 2026.
-\newblock Accessed: 2026-07-17.
-
 \bibitem{urusov2025backtesting}
 Andrey Urusov, Rostislav Berezovskiy, and Yury Yanovich.
-\newblock Backtesting framework for concentrated liquidity market makers on uniswap v3 decentralized exchange.
+\newblock Backtesting framework for concentrated liquidity market makers on
+  uniswap v3 decentralized exchange.
 \newblock {\em Blockchain: Research and Applications}, 6(1):100256, 2025.
 
 \bibitem{11575501}
-Andrey Voronin, Roman Vlasov, Vladimir Gorgadze, Andrey Seoev, and Yury Yanovich.
-\newblock Characterizing path-independent fees: A route to zero impermanent loss in cpmms.
-\newblock In {\em 2026 IEEE International Conference on Blockchain and Cryptocurrency (ICBC)}, pages 1--7, 2026.
+Andrey Voronin, Roman Vlasov, Vladimir Gorgadze, Andrey Seoev, and Yury
+  Yanovich.
+\newblock Characterizing path-independent fees: A route to zero impermanent
+  loss in cpmms.
+\newblock In {\em 2026 IEEE International Conference on Blockchain and
+  Cryptocurrency (ICBC)}, pages 1--7, 2026.
 
 \end{thebibliography}
