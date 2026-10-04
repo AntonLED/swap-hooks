@@ -125,6 +125,45 @@ def figure_note(note: str | None):
         _FIGURE_NOTE = previous
 
 
+def snug_suplabel(fig, label, axes, pad_pt: float = 5.0) -> None:
+    """Pull a figure-level sup-label up against the axes it names.
+
+    `fig.supxlabel` anchors near the figure's bottom edge and `fig.supylabel`
+    near its left edge, and `tight_layout` sizes those margins for the tick
+    labels without knowing a sup-label is going to sit outside them. The label
+    then floats a quarter of an inch clear of the axis and reads as a caption
+    rather than as the axis's own name — which is exactly what it stopped
+    looking like once the resize pass shrank the canvases.
+
+    Measures where the axes actually end (`get_tightbbox`, so tick labels and
+    per-axes labels are included) and shifts the label to `pad_pt` points
+    beyond that edge. `pad_pt` defaults to matplotlib's own `labelpad`, so the
+    result matches the spacing of an ordinary `ax.set_xlabel`.
+
+    Works for either orientation: the axis is inferred from the label's own
+    rotation, and the shift is computed from the label's measured extent, so
+    it does not depend on the alignment `supxlabel`/`supylabel` happened to
+    set. Call it after every layout call (`tight_layout`, `subplots_adjust`)
+    and before saving; `bbox_inches="tight"` then trims the freed margin, so
+    the figure loses the dead band instead of keeping it as padding.
+    """
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    inverse = fig.transFigure.inverted()
+    extent = matplotlib.transforms.Bbox.union(
+        [ax.get_tightbbox(renderer) for ax in np.ravel(axes)]
+    ).transformed(inverse)
+    here = label.get_window_extent(renderer).transformed(inverse)
+    x, y = label.get_position()
+
+    if label.get_rotation() % 180:  # rotated: a y-axis label, sits to the left
+        gap = pad_pt / (fig.get_figwidth() * 72.0)
+        label.set_x(x + (extent.x0 - gap) - here.x1)
+    else:  # horizontal: an x-axis label, sits below
+        gap = pad_pt / (fig.get_figheight() * 72.0)
+        label.set_y(y + (extent.y0 - gap) - here.y1)
+
+
 def _save(fig, out: Path, table: pd.DataFrame | None = None) -> None:
     fig.patch.set_facecolor(SURFACE)
     if _FIGURE_NOTE:
