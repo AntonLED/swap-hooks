@@ -35,7 +35,6 @@ from experiments.figures import (
     ACCENT_ALT,
     GRID,
     INK,
-    INK_MUTED,
     NEUTRAL,
     SURFACE,
     _save,
@@ -47,13 +46,14 @@ HOOKS = ["VolatilityHook", "BAHook", "DAHook", "ABHook", "MEVChargeHook"]
 REGIMES = ["high", "mid", "low"]  # top row = the interesting one
 GAS = [5_000_000_000, 20_000_000_000, 80_000_000_000]
 VOLATILE = ["ETH/SHIB", "ETH/USDC"]
+STRIPE = "#f3f2ef"  # alternating hook-row background, same as draw_seed_forest.py
 
 # Same switch and naming as notebooks 07/08: figures of different operating
 # points are named apart and never overwrite each other.
 CONFIGS = {
     "headline": {
         "results": "results-uu",
-        "prefix": "uu_",
+        "prefix": "uu_classic_",  # uu_regime_gas_grid.pdf is OWNED by draw_regime_gas_grid_merged.py
         "note": "κ = 1.0 — calibrated turnover (post gas-fix rerun of 2026-08-12)",
     },
     "informed": {
@@ -116,8 +116,11 @@ def main() -> None:
     table = pd.DataFrame(rows)
     drawn = table[table["valuation"] == "net_result_delta"]
 
+    # Canvas sized for the ~3.5 in column it is printed at, rather than the
+    # 5.3 in that forced a 0.66 downscale and put 9 pt type on the page at
+    # 6 pt. Smaller canvas + larger point sizes: both raise effective size.
     fig, axes = plt.subplots(
-        len(REGIMES), len(GAS), figsize=(5.3, 4.5), sharex=True, sharey=True
+        len(REGIMES), len(GAS), figsize=(4.2, 3.6), sharex=True, sharey=True
     )
     fig.patch.set_facecolor(SURFACE)
 
@@ -126,6 +129,9 @@ def main() -> None:
         for j, gas in enumerate(GAS):
             ax = axes[i][j]
             ax.set_facecolor(SURFACE)
+            for hi, y in enumerate(ys):
+                if hi % 2 == 0:
+                    ax.axhspan(y - 0.5, y + 0.5, color=STRIPE, zorder=0)
             ax.axvline(0, color="black", linewidth=0.7, zorder=1)
             panel = drawn[(drawn["regime"] == regime) & (drawn["gas_price_wei"] == gas)]
             for policy, y in zip(HOOKS, ys):
@@ -156,23 +162,26 @@ def main() -> None:
                 )
             ax.grid(axis="x", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
             ax.set_axisbelow(True)
-            ax.tick_params(labelsize=9)
-            ax.xaxis.set_major_locator(plt.MaxNLocator(4))
+            ax.tick_params(labelsize=10)
+            # Two intervals, not four: all nine panels share one x range, so a
+            # panel is ~0.5 in wide on the page and four enlarged "1.2k"-sized
+            # labels run into each other.
+            ax.xaxis.set_major_locator(plt.MaxNLocator(2))
             ax.xaxis.set_major_formatter(
                 plt.FuncFormatter(lambda v, _: f"{v / 1000:g}k" if v else "0")
             )
             if j == 0:
                 ax.set_yticks(ys)
-                ax.set_yticklabels(HOOKS, fontsize=9.5, color=INK)
+                ax.set_yticklabels(HOOKS, fontsize=8.5, color=INK)
                 ax.set_ylabel(
-                    f"{regime} volatility", fontsize=10.5, color=INK, labelpad=8
+                    f"{regime} volatility", fontsize=11.5, color=INK, labelpad=8
                 )
             if i == 0:
-                ax.set_title(f"{gas // 10**9} gwei", fontsize=10.5, color=INK)
+                ax.set_title(f"{gas // 10**9} gwei", fontsize=11.5, color=INK)
             if i == len(REGIMES) - 1 and j == 1:
                 ax.set_xlabel(
-                    "median Δ vs static 30 bps, USDT/window (k = thousands)",
-                    fontsize=9.5,
+                    "median Δ vs static 30 bps, USDT/window",
+                    fontsize=11,
                     color=INK,
                 )
             ax.margins(y=0.18)
@@ -248,8 +257,11 @@ def main_relative() -> None:
                 )
     table = pd.DataFrame(rows)
 
+    # Canvas sized for the ~3.5 in column it is printed at, rather than the
+    # 5.3 in that forced a 0.66 downscale and put 9 pt type on the page at
+    # 6 pt. Smaller canvas + larger point sizes: both raise effective size.
     fig, axes = plt.subplots(
-        len(REGIMES), len(GAS), figsize=(5.3, 4.5), sharex=True, sharey=True
+        len(REGIMES), len(GAS), figsize=(4.2, 3.6), sharex=True, sharey=True
     )
     fig.patch.set_facecolor(SURFACE)
 
@@ -258,6 +270,9 @@ def main_relative() -> None:
         for j, gas in enumerate(GAS):
             ax = axes[i][j]
             ax.set_facecolor(SURFACE)
+            for hi, y in enumerate(ys):
+                if hi % 2 == 0:
+                    ax.axhspan(y - 0.5, y + 0.5, color=STRIPE, zorder=0)
             ax.axvline(0, color="black", linewidth=0.7, zorder=1)
             panel = table[(table["regime"] == regime) & (table["gas_price_wei"] == gas)]
             for policy, y in zip(HOOKS, ys):
@@ -288,20 +303,23 @@ def main_relative() -> None:
                 )
             ax.grid(axis="x", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
             ax.set_axisbelow(True)
-            ax.tick_params(labelsize=9)
-            ax.xaxis.set_major_locator(plt.MaxNLocator(4))
+            ax.tick_params(labelsize=10)
+            # Two intervals, not four: all nine panels share one x range, so a
+            # panel is ~0.5 in wide on the page and four enlarged "1.2k"-sized
+            # labels run into each other.
+            ax.xaxis.set_major_locator(plt.MaxNLocator(2))
             if j == 0:
                 ax.set_yticks(ys)
-                ax.set_yticklabels(HOOKS, fontsize=9.5, color=INK)
+                ax.set_yticklabels(HOOKS, fontsize=10.5, color=INK)
                 ax.set_ylabel(
-                    f"{regime} volatility", fontsize=10.5, color=INK, labelpad=8
+                    f"{regime} volatility", fontsize=11.5, color=INK, labelpad=8
                 )
             if i == 0:
-                ax.set_title(f"{gas // 10**9} gwei", fontsize=10.5, color=INK)
+                ax.set_title(f"{gas // 10**9} gwei", fontsize=11.5, color=INK)
             if i == len(REGIMES) - 1 and j == 1:
                 ax.set_xlabel(
-                    "median Δ, % of panel's median baseline result",
-                    fontsize=9.5,
+                    "median Δ, % of panel baseline",
+                    fontsize=11,
                     color=INK,
                 )
             ax.margins(y=0.18)
