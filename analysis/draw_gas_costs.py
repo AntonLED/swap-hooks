@@ -26,7 +26,6 @@ from experiments.figures import (
     ACCENT,
     GRID,
     INK,
-    INK_MUTED,
     SURFACE,
     _save,
     figure_note,

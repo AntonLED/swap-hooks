@@ -145,8 +145,9 @@ def test_bootstrap_ci_and_the_test_can_disagree_and_that_is_informative():
 
 
 def test_bootstrap_ci_handles_an_empty_or_degenerate_sample():
-    from experiments.stats import bootstrap_median_ci
     import math
+
+    from experiments.stats import bootstrap_median_ci
 
     low, high = bootstrap_median_ci([])
     assert math.isnan(low) and math.isnan(high)

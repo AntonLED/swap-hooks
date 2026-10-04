@@ -22,7 +22,7 @@ from pathlib import Path
 import matplotlib
 
 try:  # inside IPython/Jupyter keep whatever backend %matplotlib chose
-    get_ipython()  # type: ignore[name-defined]  # noqa: F821
+    get_ipython()  # type: ignore[name-defined]
 except NameError:
     matplotlib.use("Agg")
 

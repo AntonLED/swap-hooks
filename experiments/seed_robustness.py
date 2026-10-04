@@ -230,9 +230,7 @@ def analyse(
     rows = []
     # Pairing is within (seed, gas): the baseline of the same realisation and
     # the same gas scenario. Anything else compares different random draws.
-    for (pair, seed, gas_price), group in ok.groupby(
-        ["pair", "seed", "gas_price_wei"]
-    ):
+    for (pair, seed, gas_price), group in ok.groupby(["pair", "seed", "gas_price_wei"]):
         base = group[group["policy"] == BASELINE].set_index("window_start_ms")
         for policy, sub in group.groupby("policy"):
             if policy == BASELINE:

@@ -26,7 +26,6 @@ from experiments.figures import (
     ACCENT,
     GRID,
     INK,
-    INK_MUTED,
     SURFACE,
     _save,
     figure_note,
@@ -92,9 +91,7 @@ def main() -> None:
         )
         ax.plot(hours, prof["median"] / 1e3, color=ACCENT, linewidth=1.8)
         # The assumed flat mean at kappa=1: 20M / 1440 minutes.
-        ax.axhline(
-            20_000 / 1.44 / 1e3, color=INK, linewidth=1.0, linestyle=(0, (4, 3))
-        )
+        ax.axhline(20_000 / 1.44 / 1e3, color=INK, linewidth=1.0, linestyle=(0, (4, 3)))
 
         ax.set_ylabel(f"{pair}\nkUSDT / min", fontsize=8.5, color=INK)
         ax.grid(axis="both", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
