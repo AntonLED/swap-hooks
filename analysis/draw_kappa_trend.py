@@ -29,11 +29,11 @@ from experiments.figures import (
     ACCENT_ALT,
     GRID,
     INK,
-    INK_MUTED,
     NEUTRAL,
     SURFACE,
     _save,
     figure_note,
+    snug_suplabel,
 )
 from experiments.stats import analyse
 
@@ -72,7 +72,10 @@ def main() -> None:
     table = pd.DataFrame(rows)
     drawn = table[table["valuation"] == "net_result_delta"]
 
-    fig, axes = plt.subplots(len(HOOKS), 1, figsize=(4.9, 6.6), sharex=True)
+    # Canvas sized for the ~3.45-3.5 in it is printed at, so the point sizes
+    # below arrive on the page at roughly their nominal value instead of the
+    # 0.70 downscale a 4.9 in canvas forced.
+    fig, axes = plt.subplots(len(HOOKS), 1, figsize=(4.05, 6.35), sharex=True)
     fig.patch.set_facecolor(SURFACE)
 
     for ax, policy in zip(axes, HOOKS):
@@ -103,32 +106,33 @@ def main() -> None:
                 zorder=4,
             )
         ax.set_xscale("log")
-        ax.set_ylabel(policy, fontsize=9.5, color=INK)
+        ax.set_ylabel(policy, fontsize=10.5, color=INK)
         ax.grid(axis="y", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
         ax.set_axisbelow(True)
-        ax.tick_params(labelsize=9)
+        ax.tick_params(labelsize=10.5)
         ax.yaxis.set_major_formatter(
             plt.FuncFormatter(lambda v, _: f"{v / 1000:g}k" if v else "0")
         )
         ax.margins(y=0.32)
 
     axes[-1].set_xticks([lv for lv, _ in LEVELS])
+    # The two-line tick labels are the widest thing on the x axis; they stay a
+    # touch below the other sizes so five of them still clear each other.
     axes[-1].set_xticklabels(
-        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=9
+        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=9.5
     )
-    axes[-1].set_xlabel(
-        "κ — retail turnover, baskets/day (arbitrage share of volume beneath)",
-        fontsize=9.5,
-        color=INK,
-    )
+    # The parenthetical is gone: the second tick line already reads "(arb 89%)"
+    # and the caption carries the explanation. Brevity buys point size.
+    axes[-1].set_xlabel("κ — retail turnover, baskets/day", fontsize=11.5, color=INK)
     axes[-1].minorticks_off()
-    fig.supylabel(
-        "median Δ vs static 30 bps, USDT/window (k = thousands)",
-        fontsize=9.5,
+    ylabel = fig.supylabel(
+        "median Δ vs static 30 bps, USDT/window",
+        fontsize=12,
         color=INK,
     )
 
     fig.tight_layout()
+    snug_suplabel(fig, ylabel, axes)
 
     out = ROOT / "paper" / "Image" / "uu_kappa_trend.pdf"
     with figure_note(None):
@@ -180,7 +184,10 @@ def main_high() -> None:
                 )
     table = pd.DataFrame(rows)
 
-    fig, axes = plt.subplots(len(HOOKS), 1, figsize=(4.9, 6.8), sharex=True)
+    # Sized for the ~3.45 in it occupies as the right half of main.tex Fig. 2
+    # (and \columnwidth in the evaluation draft): a small canvas plus larger
+    # point sizes, so nothing lands under 8 pt on the page.
+    fig, axes = plt.subplots(len(HOOKS), 1, figsize=(4.05, 6.55), sharex=True)
     fig.patch.set_facecolor(SURFACE)
 
     offsets = {GAS[0]: 0.88, GAS[1]: 1.0, GAS[2]: 1.14}  # de-overlap on log x
@@ -221,25 +228,30 @@ def main_high() -> None:
                     zorder=4,
                 )
         ax.set_xscale("log")
-        ax.set_ylabel(policy, fontsize=9.5, color=INK)
+        ax.set_ylabel(policy, fontsize=10.5, color=INK)
         ax.grid(axis="y", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
         ax.set_axisbelow(True)
-        ax.tick_params(labelsize=9)
+        ax.tick_params(labelsize=10.5)
         ax.yaxis.set_major_formatter(
             plt.FuncFormatter(lambda v, _: f"{v / 1000:g}k" if v else "0")
         )
         ax.margins(y=0.32)
 
     axes[-1].set_xticks([lv for lv, _ in LEVELS])
+    # Two-line labels, five of them across ~3.45 in: kept a half point below
+    # the rest so "(arb 89%)" and "(arb 58%)" still clear each other.
     axes[-1].set_xticklabels(
-        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=9
+        [f"{lv:g}\n(arb {ARB_SHARE[lv]})" for lv, _ in LEVELS], fontsize=9.5
     )
-    axes[-1].set_xlabel("κ — retail turnover, baskets/day", fontsize=9, color=INK)
+    axes[-1].set_xlabel("κ — retail turnover, baskets/day", fontsize=11.5, color=INK)
     axes[-1].minorticks_off()
-    fig.supylabel(
-        "median Δ vs static 30 bps in high-volatility windows, "
-        "USDT/window (k = thousands)",
-        fontsize=9,
+    # Short form: the "k" suffix on the ticks needs no gloss, and both captions
+    # already say this is the high-volatility slice. A rotated label costs one
+    # line-height of canvas width whatever its length, so the saving is spent
+    # entirely on point size.
+    ylabel = fig.supylabel(
+        "median Δ vs static 30 bps, USDT/window",
+        fontsize=12,
         color=INK,
     )
 
@@ -256,9 +268,20 @@ def main_high() -> None:
         )
         for g in GAS
     ]
-    axes[0].legend(handles=handles, loc="upper right", frameon=True, fontsize=9)
-
     fig.tight_layout()
+    # legend above the panels: inside the first panel it sits on the κ = 3 data
+    fig.subplots_adjust(top=0.94)
+    legend = fig.legend(
+        handles=handles,
+        loc="upper center",
+        bbox_to_anchor=(0.55, 1.0),
+        ncol=3,
+        fontsize=10,
+        borderpad=0.4,
+        columnspacing=1.2,
+    )
+    legend.get_frame().set_linewidth(0.6)
+    snug_suplabel(fig, ylabel, axes)
 
     out = ROOT / "paper" / "Image" / "uu_kappa_trend_high.pdf"
     with figure_note(None):

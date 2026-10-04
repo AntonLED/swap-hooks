@@ -27,11 +27,11 @@ from experiments.figures import (
     ACCENT_ALT,
     GRID,
     INK,
-    INK_MUTED,
     NEUTRAL,
     SURFACE,
     _save,
     figure_note,
+    snug_suplabel,
 )
 from experiments.stats import bootstrap_median_ci
 
@@ -89,7 +89,10 @@ def corner_seeds(seeds_csv: str) -> dict[tuple[str, int], tuple[float, float, fl
 
 
 def main() -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(6.2, 4.6), sharey=True)
+    # Canvas sized for the \columnwidth (~3.5 in) it is printed at: a 6.2 in
+    # canvas meant a 0.58 downscale, so 9 pt type reached the page at 5 pt.
+    # Marks shrink with the canvas so the six-entry clusters keep their gaps.
+    fig, axes = plt.subplots(1, 2, figsize=(4.3, 3.8), sharey=True)
     fig.patch.set_facecolor(SURFACE)
 
     rows = []
@@ -121,7 +124,7 @@ def main() -> None:
                     [lo, hi],
                     [y, y],
                     color=colour,
-                    linewidth=1.8 if is_matrix else 1.1,
+                    linewidth=1.5 if is_matrix else 1.0,
                     alpha=1.0 if is_matrix else 0.75,
                     solid_capstyle="round",
                     zorder=3 if is_matrix else 2,
@@ -130,7 +133,7 @@ def main() -> None:
                     med,
                     y,
                     marker="o",
-                    markersize=5.6 if is_matrix else 3.6,
+                    markersize=4.8 if is_matrix else 3.1,
                     markerfacecolor=colour if (wins or loses) else SURFACE,
                     markeredgecolor=colour,
                     markeredgewidth=1.1,
@@ -148,30 +151,49 @@ def main() -> None:
                     }
                 )
 
-        ax.set_title(label, fontsize=10.5, color=INK)
+        ax.set_title(label, fontsize=10, color=INK)
         ax.grid(axis="x", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
         ax.set_axisbelow(True)
-        ax.tick_params(labelsize=9)
-        ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+        ax.tick_params(labelsize=10)
+        # Three intervals, not five: each panel is ~1.6 in on the page and the
+        # enlarged "-1.5k" labels collide at the old tick density.
+        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
         ax.xaxis.set_major_formatter(
             plt.FuncFormatter(lambda v, _: f"{v / 1000:g}k" if v else "0")
         )
 
     handles = [
-        plt.Line2D([], [], color="black", linewidth=1.8, marker="o",
-                   markersize=5.6, markerfacecolor="black",
-                   label="matrix of record (48 windows)"),
-        plt.Line2D([], [], color="black", linewidth=1.1, marker="o",
-                   markersize=3.6, markerfacecolor="white",
-                   label="seed replicates (16 windows)"),
+        plt.Line2D(
+            [],
+            [],
+            color="black",
+            linewidth=1.5,
+            marker="o",
+            markersize=4.8,
+            markerfacecolor="black",
+            label="matrix (48 windows)",
+        ),
+        plt.Line2D(
+            [],
+            [],
+            color="black",
+            linewidth=1.0,
+            marker="o",
+            markersize=3.1,
+            markerfacecolor="white",
+            label="seeds (16 windows)",
+        ),
     ]
     ys = [(len(HOOKS) - 1 - i) * band for i in range(len(HOOKS))]
     axes[0].set_yticks(ys)
-    axes[0].set_yticklabels(HOOKS, fontsize=9.5, color=INK)
+    axes[0].set_yticklabels(HOOKS, fontsize=10.5, color=INK)
     axes[0].set_ylim(min(ys) - band / 2, max(ys) + band / 2)
-    fig.supxlabel(
-        "median Δ vs static 30 bps in high-volatility windows at 5 gwei, USDT/window",
-        fontsize=9.5,
+    # Short form, back on one line: the caption already states the slice
+    # (high-volatility windows, 5 gwei, volatile pairs pooled), so the label
+    # keeps only the quantity and its unit — and the room buys point size.
+    xlabel = fig.supxlabel(
+        "median Δ vs static 30 bps, USDT/window",
+        fontsize=11,
         color=INK,
     )
     fig.tight_layout()
@@ -182,12 +204,15 @@ def main() -> None:
         loc="upper center",
         bbox_to_anchor=(0.5, 1.0),
         ncol=2,
-        fontsize=7.5,
-        borderpad=0.5,
-        handlelength=1.8,
-        columnspacing=1.6,
+        fontsize=10.5,
+        borderpad=0.4,
+        handlelength=1.4,
+        columnspacing=1.0,
     )
     legend.get_frame().set_linewidth(0.6)
+    # After every layout call: the label belongs to the axis, not to the
+    # bottom of the page.
+    snug_suplabel(fig, xlabel, axes)
 
     out = ROOT / "paper" / "Image" / "uu_seed_robustness.pdf"
     with figure_note(None):

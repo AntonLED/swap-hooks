@@ -16,15 +16,15 @@ column.
 import sys
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from experiments.binance import fetch_klines
-from experiments.figures import GRID, INK, INK_MUTED, SURFACE, figure_note, _save
+from experiments.figures import GRID, INK, INK_MUTED, SURFACE, _save, figure_note
 from experiments.uu import uu_profile
 
 YEAR_START, YEAR_END = 1_704_067_200_000, 1_735_689_600_000
@@ -33,7 +33,7 @@ SMOOTH_MIN = 20
 
 LEVELS = [  # kappa, label lines (kept short), measured arb share
     (3.0, "flagship pool", "16%"),
-    (1.0, "primary venue (calibrated)", "13%"),
+    (1.0, "primary venue", "13%"),
     (0.3, "mid-tier pool", "25%"),
     (0.1, "secondary venue", "58%"),
     (0.03, "over-provisioned pool", "89%"),
@@ -68,7 +68,11 @@ def main() -> None:
     shape = median_day_shape()
     hours = np.arange(1440) / 60.0
 
-    fig, ax = plt.subplots(figsize=(3.5, 2.9))
+    # Printed at \columnwidth (~3.5 in): a 7 in canvas meant a 0.62 downscale
+    # and 6.4 pt annotations arriving on the page at 4 pt. The canvas is now
+    # near 1:1 with the printed width, and taller in proportion so the five
+    # two-line right-edge labels still clear each other at the larger size.
+    fig, ax = plt.subplots(figsize=(5, 3))
     fig.patch.set_facecolor(SURFACE)
     ax.set_facecolor(SURFACE)
 
@@ -82,12 +86,15 @@ def main() -> None:
             linewidth=2.0 if emphasis else 1.2,
             zorder=3 if emphasis else 2,
         )
-        daily = kappa * BASKET
-        daily_label = f"{daily / 1e6:g}M"
         ax.annotate(
-            f"κ = {kappa:g} · {daily_label}/day · arb {arb}\n{kind}",
-            (24.15, v[-1]),
-            fontsize=6.4,
+            f"κ = {kappa:g} / arb {arb}\n{kind}",
+            (24, v[-1]),
+            # The gap to the frame is set in points, not in data units: on the
+            # narrower canvas a 0.15-hour offset shrank to a hairline and the
+            # labels came up against the right spine.
+            textcoords="offset points",
+            xytext=(5, 0),
+            fontsize=9.3,
             color=INK if emphasis else INK_MUTED,
             va="center",
             ha="left",
@@ -95,25 +102,22 @@ def main() -> None:
             fontweight="bold" if emphasis else "normal",
         )
 
-    # Session captions in a clear band above all curves
-    top = 3.0 * BASKET * shape.max()
-    ax.set_ylim(0.03 * BASKET * shape.min() * 0.55, top * 3.2)
-    for x, txt in [(3.2, "Asia (quiet)"), (15.8, "US session")]:
-        ax.annotate(txt, (x, top * 1.9), fontsize=6.8, color=INK, ha="center")
-
     ax.set_yscale("log")
     ax.set_xlim(0, 24)
     ax.set_xticks(range(0, 25, 6))
-    ax.set_xticklabels([f"{h:02d}:00" for h in range(0, 25, 6)], fontsize=7.5)
-    ax.set_xlabel("time of day (UTC)", fontsize=8, color=INK)
-    ax.set_ylabel("potential retail demand, USDT/min", fontsize=8, color=INK)
-    ax.tick_params(labelsize=7.5)
+    ax.set_xticklabels([f"{h:02d}:00" for h in range(0, 25, 6)], fontsize=9.2)
+    ax.set_xlabel("time of day (UTC)", fontsize=10, color=INK)
+    ax.set_ylabel("retail demand, USDT/min", fontsize=10, color=INK)
+    ax.tick_params(labelsize=9.2)
     ax.grid(axis="y", color=GRID, linewidth=0.5, linestyle=(0, (1, 2)))
     ax.set_axisbelow(True)
 
     fig.tight_layout()
-    # room for the right-edge labels
-    fig.subplots_adjust(right=0.64)
+    # Room for the right-edge labels. 0.64 was sized for the old, longer
+    # annotation; the short form needs far less gutter, and handing the
+    # difference back shrinks the canvas — which is what keeps the type at
+    # or above 8 pt once LaTeX scales this down to \columnwidth (~3.5 in).
+    fig.subplots_adjust(right=0.55)
 
     table = pd.DataFrame(
         {
