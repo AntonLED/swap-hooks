@@ -1,12 +1,5 @@
 \begin{thebibliography}{10}
 
-\bibitem{werner2022sok}
-Sam~M. Werner, Daniel Perez, Lewis Gudgeon, Ariah Klages-Mundt, Dominik Harz,
-  and William~J. Knottenbelt.
-\newblock {SoK}: Decentralized finance ({DeFi}).
-\newblock In {\em Proc. 4th ACM Conf. Advances in Financial Technologies},
-  pages 30--46, 2022.
-
 \bibitem{angeris2019analysis}
 Guillermo Angeris, Hsien-Tang Kao, Rei Chiang, Charlie Noyes, and Tarun Chitra.
 \newblock An analysis of uniswap markets, 2019.
@@ -17,6 +10,20 @@ Guillermo Angeris, Akshay Agrawal, Alex Evans, Tarun Chitra, and Stephen Boyd.
   optimization.
 \newblock In {\em Handbook on Blockchain}, pages 415--444. Springer, 2022.
 
+\bibitem{milionis2022lvr}
+Jason Milionis, Ciamac~C. Moallemi, Tim Roughgarden, and Anthony~Lee Zhang.
+\newblock Automated market making and loss-versus-rebalancing, 2022.
+
+\bibitem{lebedeva2025dynamic}
+Irina Lebedeva, Dmitrii Umnov, Yury Yanovich, Ignat Melnikov, and George
+  Ovchinnikov.
+\newblock Dynamic fee for reducing impermanent loss in decentralized exchanges,
+  2025.
+
+\bibitem{baggiani2025optimal}
+Leonardo Baggiani, Martin Herdegen, and Leandro S{\'a}nchez-Betancourt.
+\newblock Optimal dynamic fees in automated market makers, 2025.
+
 \bibitem{adams2020uniswap}
 Hayden Adams, Noah Zinsmeister, and Dan Robinson.
 \newblock Uniswap v2 core.
@@ -26,10 +33,6 @@ Hayden Adams, Noah Zinsmeister, and Dan Robinson.
 Hayden Adams, Noah Zinsmeister, Moody Salem, River Keefer, and Dan Robinson.
 \newblock Uniswap v3 core.
 \newblock White paper, 2021.
-
-\bibitem{milionis2022lvr}
-Jason Milionis, Ciamac~C. Moallemi, Tim Roughgarden, and Anthony~Lee Zhang.
-\newblock Automated market making and loss-versus-rebalancing, 2022.
 
 \bibitem{fan2021strategic}
 Zhou Fan, Francisco Marmolejo-Cossio, Daniel~J. Moroz, Michael Neuder, Rithvik
@@ -47,16 +50,6 @@ Robin Fritsch.
 \newblock A note on optimal fees for constant function market makers.
 \newblock In {\em Proceedings of the 2021 ACM CCS Workshop on Decentralized
   Finance and Security}, CCS ’21, page 9–14. ACM, November 2021.
-
-\bibitem{lebedeva2025dynamic}
-Irina Lebedeva, Dmitrii Umnov, Yury Yanovich, Ignat Melnikov, and George
-  Ovchinnikov.
-\newblock Dynamic fee for reducing impermanent loss in decentralized exchanges,
-  2025.
-
-\bibitem{baggiani2025optimal}
-Leonardo Baggiani, Martin Herdegen, and Leandro S{\'a}nchez-Betancourt.
-\newblock Optimal dynamic fees in automated market makers, 2025.
 
 \bibitem{campbell2025optimal}
 Steven Campbell, Philippe Bergault, Jason Milionis, and Marcel Nutz.

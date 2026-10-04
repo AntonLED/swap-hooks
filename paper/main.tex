@@ -7,6 +7,7 @@
 \usepackage{url}
 \usepackage{enumitem}
 \usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
 
 \usepackage{xcolor}
 \newcommand\todo[1]{\textcolor{red}{#1}}
@@ -21,7 +22,7 @@
 
 \begin{document}
 
-\title{A Configurable Dynamic-Fee Hook Framework for Uniswap v4 Liquidity Pools}
+\title{A Reproducible Evaluation Framework for Adaptive Fee Policies in Uniswap v4}
 
 % Confirm full names, affiliations, and e-mail addresses before submission.
 % \author{\IEEEauthorblockN{Yash Madhwal, Ivan Frolov, Vasiliy Grachev, Anton Ledrov and Yury A. Yanovich}
@@ -32,432 +33,615 @@
 \maketitle
 
 \begin{abstract}
-  Uniswap v4 makes swap fees programmable through hooks, but implementing and comparing alternative fee policies still requires compatible Solidity contracts, permission-aware deployment, pool initialization, market-data inputs, and repeatable analysis. This paper presents a configurable development and evaluation framework that integrates these tasks. Its browser interface allows developers to select a supported dynamic-fee policy, configure its parameters, inspect the generated Solidity source, and export a self-contained Foundry project. The framework deploys hook-enabled pools on a local Forge network and evaluates them using Binance-derived price and volume profiles, Chainlink-compatible mock feeds, and simulated retail and arbitrage flow. We compare five dynamic policies with four static-fee configurations in 29,160 experimental cells spanning three token pairs, 72 one-day windows per pair, three gas-price scenarios, and five retail-demand levels. Dynamic-policy outcomes are paired with a predeclared 30-basis-point static baseline under identical market conditions and summarized using bootstrap confidence intervals. No dynamic policy provides an unconditional advantage over the baseline. Conditional improvements occur in high-volatility, low-gas settings, with the best-performing policy depending on the retail-to-arbitrage flow composition; higher gas prices remove these gains. The framework therefore provides reproducible infrastructure for constructing, deploying, and comparing Uniswap v4 dynamic-fee hooks, while the evaluation shows that their economic benefits are conditional rather than universal.
+  Uniswap v4 allows liquidity providers to adjust swap fees through programmable hooks. However, comparing alternative fee policies requires more than implementing their fee rules: each policy must be deployed under compatible hook permissions, initialized with the same pool state, exposed to identical market conditions, and evaluated using consistent metrics. This paper presents a reproducible framework that integrates dynamic-fee hook implementations, permission-aware deployment, historical market replay, local EVM execution, and comparative analysis. We evaluate five dynamic policies and four static-fee configurations in 29{,}160 experimental cells covering three token pairs, 72 one-day windows per pair, three gas-price scenarios, and five ordinary-user demand levels. Each policy is paired with a predeclared static 30~bps baseline under identical market conditions and random inputs. The results show that no dynamic policy provides an unconditional advantage over the baseline. Some policies improve liquidity-provider outcomes during high-volatility, low-gas conditions, but the best-performing policy depends on the balance between ordinary-user and arbitrage volume. Higher gas prices eliminate these gains. The findings indicate that dynamic fees are conditionally, rather than universally, beneficial and demonstrate the importance of evaluating fee policies jointly with market conditions, order-flow composition, and implementation cost.
 \end{abstract}
 
 \begin{IEEEkeywords}
   automated market makers, decentralized exchanges, dynamic fees, Uniswap v4, smart-contract hooks, liquidity provision
 \end{IEEEkeywords}
 
-\section{Introduction}
-\label{sec}
-
-Decentralized finance (DeFi) provides exchange, lending, derivatives, and asset-management services through publicly executable smart contracts~\cite{werner2022sok}. Within this ecosystem, decentralized exchanges (DEXs) allow users to trade without a custodial order-matching intermediary. Many DEXs rely on automated market makers (AMMs), which execute swaps against liquidity reserves according to a deterministic function~\cite{angeris2019analysis,angeris2022multiasset}. Uniswap popularized the constant-product AMM and later introduced concentrated liquidity, allowing liquidity providers (LPs) to allocate capital within selected price ranges~\cite{adams2020uniswap,adams2021uniswapv3}. These mechanisms enable permissionless market creation, but they also expose LPs to inventory changes and adverse-selection risk.
-
-An AMM pool price changes when swaps modify the pool state. When an external market price moves before the pool price, arbitrageurs can trade against the stale pool until the remaining discrepancy no longer covers fees and transaction costs. This process changes the composition and marked value of the LP position. Impermanent loss compares the LP position with simply holding the deposited assets, whereas loss-versus-rebalancing measures the cost of passive rebalancing at stale prices relative to a continuously rebalanced benchmark~\cite{milionis2022lvr}. Concentrated liquidity adds another trade-off: a narrow range can earn a larger share of fees while active, but stops earning fees when the market leaves the range and may require repositioning~\cite{fan2021strategic}.
-
-Swap fees compensate LPs for providing liquidity and bearing these risks~\cite{Vlasov2025Impact}. A static fee must, however, serve different market conditions. A high fee can discourage ordinary trading during calm periods, while a low fee may provide insufficient compensation during volatile or arbitrage-intensive periods. Dynamic-fee mechanisms instead adjust the fee according to information such as recent price movement, volatility, trade direction, or trade size. In this paper, \emph{dynamic} refers only to the swap fee. The hook does not directly set the asset price: the pool price remains determined by liquidity, the AMM state, and executed swaps.
-
-Prior studies analyze this fee-setting problem from several perspectives. Fritsch~\cite{Fritsch_2021} examines optimal fees for constant-function market makers. Lebedeva \emph{et al.} evaluate block-adaptive, deal-adaptive, and oracle-informed asymmetric policies~\cite{lebedeva2025dynamic}; Baggiani \emph{et al.} derive dynamic fees through stochastic control~\cite{baggiani2025optimal}; and Campbell \emph{et al.} study fee selection when an AMM competes with a centralized exchange~\cite{campbell2025optimal}. Agent-based research further considers heterogeneous traders, latency, arbitrage, and maximal-extractable-value searchers~\cite{dinosse2026dynamic}. These studies motivate adaptive fees and provide candidate policies, but an economic rule alone does not provide a deployable Uniswap implementation or a common environment in which several policies can be compared consistently.
-
-Uniswap v4 provides the protocol mechanism needed for such implementations. A hook is an external smart contract attached to a pool when the pool is initialized and invoked at specified points of its lifecycle. For a dynamic-fee pool, the hook can update the stored LP fee or return a fee override for an individual swap~\cite{adams2024uniswapv4,uniswapDynamicFees}. Implementing a usable hook nevertheless requires more than translating a fee equation into Solidity. Developers must encode callback permissions, obtain a permission-compatible hook address, deploy Uniswap core and periphery contracts, initialize a pool, provide liquidity and price inputs, execute swaps, and collect comparable outputs. Reimplementing this surrounding infrastructure for every policy reduces reproducibility and can confound differences in fee logic with differences in deployment or simulation code.
-
-This paper addresses that engineering gap with a configurable development and evaluation framework for Uniswap v4 dynamic-fee hooks. Through a browser interface, a developer selects a supported hook template, configures its parameters, and inspects the resulting Solidity source. The framework can export a self-contained Foundry project, deploy the selected hook and a new hook-enabled pool on a local Forge network, provide Chainlink-compatible mock price feeds, execute historical-data-driven scenarios, and present the resulting metrics and figures. The generated source remains visible and independently executable; the configurator supports development and experimentation rather than replacing compilation, testing, or security review.
-
-The framework is evaluated through a controlled comparison of five dynamic policies and four static-fee configurations. The experiment uses 2024 Binance-derived price and volume profiles for ETH/SHIB, ETH/USDC, and USDC/USDT. For each pair, 72 one-day windows represent low-, medium-, and high-volatility conditions. Every policy is evaluated under three gas-price scenarios and five retail-demand levels using a simulated market containing ordinary users and a gas-aware arbitrageur. This produces 29,160 experimental cells. Dynamic-policy outcomes are paired with a predeclared 30-basis-point static baseline under the same pair, historical window, gas price, demand level, and random inputs.
-
-\todo{The comparison finds no dynamic policy that outperforms the static baseline unconditionally. Conditional advantages nevertheless appear during high-volatility periods when gas prices are low. Which policy benefits depends on the balance between ordinary-user and arbitrage volume, while the additional gas consumed by dynamic hooks removes these gains as gas prices rise. The results therefore do not support universal superiority of dynamic fees; instead, they demonstrate that their effectiveness depends on market conditions, order-flow composition, and implementation cost.}
-
-The contributions of this work are:
-\begin{itemize}
-  \item A configurable Uniswap v4 development framework that combines dynamic-fee hook templates, browser-based parameter selection, generated-source inspection, and self-contained Foundry project export.
-  \item A reusable deployment and execution path that initializes hook-enabled pools on Forge, integrates Chainlink-compatible mock feeds, replays historical market conditions, and measures contract-level gas and pool outcomes.
-  \item A reproducible factorial evaluation comprising 29,160 experimental cells across five dynamic policies, four static fees, three token pairs, three volatility regimes, three gas-price scenarios, and five retail-demand levels.
-  \item Empirical evidence that dynamic-fee hooks provide no unconditional advantage over a well-chosen static fee, but can improve LP outcomes under specific high-volatility and low-gas conditions.
-\end{itemize}
-
-The evaluation is conducted on a local EVM using historical market observations and modeled trader behavior. It does not reproduce live oracle operation, mempool competition, strategic routing, or public-chain liquidity dynamics. Its purpose is to demonstrate a reproducible method for constructing and comparing deployable fee policies and to identify the conditions under which their benefits appear or disappear.
-
-\section{Background and Related Work}
-\label{sec:background}
-
-\subsection{AMM Fees and LP Exposure}
-
-For reserves $x$ and $y$, a constant-product AMM maintains
-\begin{equation}
-  xy=k,
-  \label{eq:constant-product}
-\end{equation}
-apart from fees, rounding, and protocol accounting. If a trader supplies $\Delta x$ and the proportional fee is $f$, the simplified output is
-\begin{equation}
-  \Delta y=y-\frac{xy}{x+(1-f)\Delta x}.
-  \label{eq:swap-output}
-\end{equation}
-Thus $f$ affects both LP revenue and trader execution. Formal analyses show how constant-function markets track reference prices through arbitrage and generalize beyond two-asset products~\cite{angeris2019analysis,angeris2020improved,angeris2022multiasset}.
-
-Let $V_{\mathrm{LP}}(T)$ be the terminal marked-to-market LP position, $V_{\mathrm{H}}(T)$ the value of holding the original assets, and $R_f(T)$ fee income in the same numeraire. A value-based loss and its fee-adjusted form are
-\begin{align}
-  IL(T)&=V_{\mathrm{H}}(T)-V_{\mathrm{LP}}(T),\label{eq:il}\\
-  L_{\mathrm{net}}(T)&=IL(T)-R_f(T).\label{eq:netloss}
-\end{align}
-This accounting distinction matters: an adaptive fee may compensate LPs through revenue without eliminating the stale-price mechanism that produces adverse selection. LVR makes that mechanism explicit by comparing the AMM with continuous rebalancing at the reference price~\cite{milionis2022lvr}, and recent work has further quantified the specific profitability zones where fee accumulation can turn impermanent loss into a sustainable gain~\cite{melnikov2026impermanent_gain}.
-
-A static pool sets $f_t=f$. A dynamic policy instead evaluates
-\begin{equation}
-  f_t=\mathcal{F}(s_t,z_t;\theta),
-  \label{eq:policy}
-\end{equation}
-where $s_t$ is observable on-chain state, $z_t$ optional external information, and $\theta$ a parameter vector. Directional policies return $f_t^{0\rightarrow1}$ and $f_t^{1\rightarrow0}$ separately, for example charging more when a swap moves the pool farther from an external reference.
-
-\subsection{Dynamic-Fee Research}
-
-Dynamic policies use different proxies for adverse conditions. Volatility-based mechanisms react to price variability; inventory policies account for reserve composition; oracle-informed policies use pool-to-reference deviation; and flow-based rules use recent volume, trade size, or direction. Lebedeva \emph{et al.} compare block-level, transaction-level, and idealized oracle-informed mechanisms and find improved LP outcomes under their simulation assumptions~\cite{lebedeva2025dynamic}. Baggiani \emph{et al.} identify two regimes in which fees balance arbitrage deterrence against attracting noise traders~\cite{baggiani2025optimal}. Campbell \emph{et al.} similarly show that volatility and competing-venue costs jointly determine fee choice~\cite{campbell2025optimal}. Recent agent-based analysis suggests that dynamic schedules may improve hedged LP profitability mainly by increasing compensation in toxic states, rather than mechanically eliminating LVR~\cite{dinosse2026dynamic}.
-
-These works optimize or compare economic policies. Our contribution is complementary: a common implementation substrate for configuring, deploying, and replaying multiple fee rules as Uniswap v4 hooks. It enables a later controlled economic comparison while keeping the surrounding software path fixed.
-
-The closest studies therefore occupy distinct levels. Formal CFMM work supplies the market foundation~\cite{angeris2019analysis,angeris2022multiasset}; LVR supplies an LP-risk benchmark~\cite{milionis2022lvr}; and dynamic-fee studies supply candidate policies and economic hypotheses~\cite{lebedeva2025dynamic,baggiani2025optimal,dinosse2026dynamic}. This paper operates at the systems level by making several rules deployable and observable through one protocol-specific path. Neither level replaces the other: a framework without controlled baselines cannot demonstrate economic benefit, while a fee model without reproducible implementation leaves integration effects unmeasured.
-
-While protocols like Balancer V3, Curve V2, and Algebra Finance have introduced internal mechanisms for adaptive fees or volatility-based adjustments, these features are tightly coupled to their specific protocol architectures. They do not provide a unified, external management layer. Consequently, researchers and developers cannot easily deploy, configure, monitor, and compare multiple fee strategies across a standardized infrastructure. This framework fills that gap by providing a protocol-agnostic (within the Uniswap v4 ecosystem) external contour for strategy lifecycle management.
-
-Table~\ref{tab:relatedwork} condenses this distinction. Prior studies primarily contribute market models, LP-risk measures, or fee policies. The present work does not replace those results; it supplies the implementation and replay path needed to instantiate and compare policy families on Uniswap v4.
-
-\begin{table*}[t]
+\begin{table*}[!t]
   \caption{Positioning relative to representative AMM and dynamic-fee research.}
   \label{tab:relatedwork}
   \centering
   \footnotesize
   \begin{tabular}{p{3.7cm}p{5.8cm}p{5.7cm}}
     \toprule
-    \textbf{Work} & \textbf{Primary contribution} & \textbf{Relationship to this framework}\\
+    \textbf{Work} &
+    \textbf{Primary contribution} &
+    \textbf{Relationship to this framework}\\
     \midrule
-    Angeris \emph{et al.}~\cite{angeris2019analysis,angeris2022multiasset} & Formal analysis and optimization of constant-function markets & Supplies the AMM foundation, not hook tooling\\
-    Milionis \emph{et al.}~\cite{milionis2022lvr} & LVR formulation for adverse-selection cost & Supplies an LP-risk benchmark for future evaluation\\
-    Lebedeva \emph{et al.}~\cite{lebedeva2025dynamic} & Block-, deal-, and oracle-informed fee policies & Supplies a policy family represented by the templates\\
-    Baggiani \emph{et al.}~\cite{baggiani2025optimal} & Stochastic-control formulation of dynamic fees & Supplies theoretical fee-design guidance\\
-    This work & Configurable contracts, deployment, replay, project export, and visualization & Supplies shared Uniswap v4 experimentation infrastructure\\
+    Angeris \emph{et al.}~\cite{angeris2019analysis,angeris2022multiasset}
+    & Formal analysis and optimization of constant-function markets
+    & Supplies the AMM foundation, not hook tooling\\
+
+    Milionis \emph{et al.}~\cite{milionis2022lvr}
+    & LVR formulation for adverse-selection cost
+    & Supplies the LP-risk benchmark used in the evaluation\\
+
+    Lebedeva \emph{et al.}~\cite{lebedeva2025dynamic}
+    & Block-, deal-, and oracle-informed fee policies
+    & Supplies a policy family represented by the implementations\\
+
+    Baggiani \emph{et al.}~\cite{baggiani2025optimal}
+    & Stochastic-control formulation of dynamic fees
+    & Supplies theoretical fee-design guidance\\
+
+    This work
+    & Common hook implementations, deployment, historical replay, and controlled comparison
+    & Supplies shared Uniswap v4 experimentation infrastructure\\
     \bottomrule
   \end{tabular}
 \end{table*}
 
-\subsection{Uniswap v4 and External Data}
+\section{Introduction}
+\label{sec}
 
-Uniswap v4 stores pools in a singleton \texttt{PoolManager} and settles intermediate balance changes through flash accounting~\cite{adams2024uniswapv4}. Hooks attach custom logic to initialization, liquidity, swap, and donation callbacks. Their enabled permissions are encoded in low-order address bits, so deployment must produce an address matching the declared callbacks~\cite{uniswapHooksDocs,uniswapHookDeployment}. For dynamic pools, a hook can call \texttt{updateDynamicLPFee} or return a per-swap override from \texttt{beforeSwap}~\cite{uniswapDynamicFees}. OpenZeppelin provides reusable bases for callback validation and fee management, including \texttt{BaseDynamicFee} and \texttt{BaseOverrideFee}~\cite{openzeppelinHooks}.
+Decentralized exchanges (DEXs) allow users to trade digital assets without a custodial order-matching intermediary. Many DEXs use automated market makers (AMMs), which execute swaps against liquidity provided by market participants according to a deterministic pricing function~\cite{angeris2019analysis,angeris2022multiasset}. Uniswap popularized the constant-product AMM and later introduced concentrated liquidity, allowing liquidity providers (LPs) to allocate capital within selected price ranges~\cite{adams2020uniswap,adams2021uniswapv3}. Providing liquidity exposes LPs to changes in both the composition and market value of their position. When an external market price changes before the AMM price, arbitrageurs can trade against the stale pool until the remaining price difference no longer covers the pool fee and transaction cost. Impermanent loss compares the resulting LP position with simply holding the originally deposited assets, whereas loss-versus-rebalancing measures the cost of passive rebalancing at stale prices relative to continuous rebalancing at the external price~\cite{milionis2022lvr}. Concentrated liquidity introduces an additional trade-off: a narrow range earns a larger share of fees while active but stops earning when the market price leaves that range~\cite{fan2021strategic}.
 
-Oracle-informed policies require a reference unavailable from the pool itself. Chainlink Data Feeds expose aggregated observations to contracts~\cite{chainlinkFeeds}. For two USD-denominated feeds, the external ratio is $r_t^{\mathrm{ext}}=p_{0,t}/p_{1,t}$. Production logic must normalize decimals and reject invalid or stale rounds. In the framework, deterministic mocks reproduce historical observations; they validate integration logic, not the timing or fault behavior of a live oracle.
+Swap fees compensate LPs for supplying liquidity and accepting these risks~\cite{Vlasov2025Impact}. However, a single static fee must serve very different market conditions. A high fee may discourage ordinary trading during calm periods, whereas a low fee may undercompensate LPs when volatility and arbitrage activity increase. Dynamic-fee policies attempt to address this trade-off by adjusting the fee using signals such as price movement, volatility, trade direction, or trade size. Their benefit is not automatic: a more responsive fee may increase revenue from risky flow, but it may also reduce executed volume and consume additional gas. The central question is therefore whether, and under which conditions, a dynamic policy produces a better LP outcome than a well-chosen static fee. In this study, \emph{dynamic} refers only to the swap fee; the hook does not directly set the asset price, which remains determined by the pool state, available liquidity, and executed swaps.
+
+Prior research has examined dynamic fee setting from theoretical and simulation-based perspectives. Fritsch studies optimal fees for constant-function market makers~\cite{Fritsch_2021}. Lebedeva \emph{et al.} compare block-adaptive, trade-adaptive, and oracle-informed asymmetric policies~\cite{lebedeva2025dynamic}; Baggiani \emph{et al.} formulate fee selection as a stochastic-control problem~\cite{baggiani2025optimal}; and Campbell \emph{et al.} study fee setting when an AMM competes with a centralized exchange~\cite{campbell2025optimal}. Agent-based work further examines heterogeneous traders, latency, arbitrage, and MEV searchers \cite{dinosse2026dynamic}. These studies provide economic models and candidate policies, but they do not provide a common Uniswap v4 implementation and execution path through which several policies can be deployed and compared under identical conditions.
+
+Uniswap v4 provides the mechanism needed to implement these policies. A hook is an external smart contract attached to a pool at initialization and invoked at specified points in the pool lifecycle. For a dynamic-fee pool, the hook can update the stored LP fee or return a fee override for an individual swap \cite{adams2024uniswapv4,uniswapDynamicFees}. Implementing a policy as a usable hook nevertheless requires more than translating its fee equation into Solidity. The implementation must define callback permissions, deploy the hook at a permission-compatible address, initialize the required Uniswap v4 contracts and pool, provide liquidity and price inputs, execute swaps, and collect comparable outputs. If this surrounding infrastructure is implemented separately for every policy, differences in deployment or simulation code may be mistaken for differences caused by the fee policy itself.
+
+To address this gap, we develop a reproducible implementation and evaluation framework for Uniswap v4 dynamic-fee hooks. The framework provides five Solidity hook implementations, permission-aware Foundry deployment scripts, local pool initialization, Chainlink-compatible mock price feeds, and a historical replay and analysis pipeline. All fee policies use the same deployment procedure, starting liquidity, market inputs, trader model, and result-processing code. Consequently, the experiment isolates the fee policy as the principal difference between matched runs.
+
+We evaluate five dynamic policies against four static-fee configurations using 2024 Binance-derived price and volume data for ETH/SHIB, ETH/USDC, and USDC/USDT. For each pair, 72 one-day windows are divided equally among low-, medium-, and high-volatility regimes. Every policy is tested under three gas-price scenarios and five levels of potential ordinary-user demand, producing 29{,}160 experimental cells. The simulation includes ordinary users and a gas-aware arbitrageur. Each policy result is paired with a static 30~bps run using the same token pair, historical window, gas price, demand level, starting liquidity, and random inputs.
+
+No evaluated dynamic policy outperforms the static 30~bps baseline across all conditions. Statistically significant improvements appear only in particular high-volatility, low-gas settings, and the best-performing policy changes with the balance between ordinary-user and arbitrage volume. As gas prices increase, the additional execution cost of the dynamic hooks removes these gains. The results therefore show that dynamic fees are conditionally, rather than universally, beneficial.
+
+The contributions of this work are:
+\begin{itemize}
+  \item A common Uniswap v4 implementation and deployment framework for five dynamic-fee policies, including shared interfaces, permission-aware hook deployment, pool initialization, mock price feeds, and contract-level gas measurement.
+
+  \item A reproducible historical-replay methodology that compares dynamic and static fee policies under matched market windows, gas prices, demand levels, starting liquidity, and random user-flow inputs.
+  \item A 29{,}160-cell empirical evaluation showing that dynamic-fee hooks do not outperform a static 30~bps baseline unconditionally, but can improve LP outcomes in specific high-volatility, low-gas settings.
+\end{itemize}
+
+The evaluation uses local EVM execution, historical market observations, and modeled trader behavior. It does not reproduce live oracle operation, mempool competition, block-builder ordering, strategic routing, or endogenous public-chain liquidity. The results should therefore be interpreted as controlled comparative evidence, not as predictions of live-pool profitability. The objective is to determine how the evaluated fee policies behave when market conditions, order-flow composition, and implementation cost are varied systematically.
+
+\section{Background and Related Work}
+\label{sec:background}
+
+\subsection{AMM Fees and LP Outcomes}
+
+For reserves $x$ and $y$, a constant-product AMM maintains $xy=k$.
+If a trader supplies $\Delta x$ and pays proportional fee $f$, the
+simplified output is
+
+\begin{equation}
+  \Delta y
+  =
+  y-\frac{xy}{x+(1-f)\Delta x}.
+  \label{eq:swap-output}
+\end{equation}
+
+A higher fee can increase LP revenue per executed swap, but it also
+worsens trader execution and may reduce volume. Arbitrage links the
+pool price to external markets: when the price difference covers the
+pool fee and transaction cost, arbitrageurs trade against the pool and
+move its price toward the external reference
+\cite{angeris2019analysis,angeris2020improved,angeris2022multiasset}.
+
+Let $V_{\mathrm{LP}}(T)$ denote the terminal value of the LP's token
+holdings excluding separately recorded fees, $V_{\mathrm{H}}(T)$ the
+terminal value of holding the originally deposited assets, and
+$R_f(T)$ accumulated fee income. We define
+
+\begin{align}
+  IL(T)
+  &=
+  V_{\mathrm{H}}(T)-V_{\mathrm{LP}}(T),
+  \label{eq:il}\\
+  \mathrm{LPNet}(T)
+  &=
+  R_f(T)-IL(T).
+  \label{eq:lpnet}
+\end{align}
+
+A positive $\mathrm{LPNet}(T)$ means that liquidity provision
+outperformed holding; a negative value means that holding produced the
+better outcome. A dynamic fee may therefore improve the LP outcome
+through additional revenue without eliminating the stale-price
+mechanism that creates adverse selection. LVR isolates this mechanism
+by comparing the AMM with continuous rebalancing at the external
+reference price~\cite{milionis2022lvr}. Related work has also examined
+when fee accumulation can offset impermanent loss
+\cite{melnikov2026impermanent_gain}.
+
+A static pool applies $f_t=f$, whereas a dynamic policy computes
+
+\begin{equation}
+  f_t=\mathcal{F}(s_t,z_t;\theta),
+  \label{eq:policy}
+\end{equation}
+
+where $s_t$ is observable on-chain state, $z_t$ is optional external
+information, and $\theta$ is the policy parameter vector. Directional
+policies may return separate fees $f_t^{0\rightarrow1}$ and
+$f_t^{1\rightarrow0}$.
+
+\subsection{Dynamic-Fee Research}
+
+Dynamic-fee policies use signals such as volatility, inventory,
+pool-to-oracle price deviation, trade direction, or trade size.
+Lebedeva \emph{et al.} compare block-level, transaction-level, and
+oracle-informed mechanisms~\cite{lebedeva2025dynamic}. Baggiani
+\emph{et al.} study the balance between arbitrage deterrence and
+uninformed flow~\cite{baggiani2025optimal}, while Campbell
+\emph{et al.} relate optimal fees to volatility and competing-venue
+costs~\cite{campbell2025optimal}. Agent-based research suggests that
+dynamic fees may improve LP profitability by increasing compensation
+during toxic-flow states rather than by eliminating LVR
+\cite{dinosse2026dynamic}.
+
+These studies provide economic models and candidate policies. Our
+contribution is complementary: a shared Uniswap v4 implementation,
+deployment, historical-replay, and analysis path for comparing several
+policy families under identical conditions. Table~\ref{tab:relatedwork}
+summarizes this positioning.
+
+\subsection{Uniswap v4 and External Price Data}
+
+Uniswap v4 manages pools through a singleton
+\texttt{PoolManager} and uses flash accounting to settle intermediate
+balance changes~\cite{adams2024uniswapv4}. Hooks are external contracts
+invoked at selected points in a pool's lifecycle. Their callback
+permissions are encoded in the low-order bits of the hook address, so
+deployment must produce an address that matches the declared
+permissions~\cite{uniswapHooksDocs,uniswapHookDeployment}. A
+dynamic-fee hook can update the stored fee through
+\texttt{updateDynamicLPFee} or return a per-swap override from
+\texttt{beforeSwap}~\cite{uniswapDynamicFees}. OpenZeppelin provides
+reusable abstractions for callback validation and fee management
+\cite{openzeppelinHooks}.
+
+Oracle-dependent policies also require an external price reference.
+For two USD-denominated feeds, the external ratio is
+
+\begin{equation}
+  r_t^{\mathrm{ext}}
+  =
+  \frac{p_{0,t}}{p_{1,t}}.
+  \label{eq:external-ratio}
+\end{equation}
+
+Production implementations must normalize feed decimals and reject
+invalid or stale observations. In the evaluation,
+Chainlink-compatible mock feeds reproduce historical prices and provide
+identical deterministic inputs to matched policy runs
+\cite{chainlinkFeeds}. They validate contract integration but do not
+reproduce live-oracle aggregation, latency, or failure behavior.
 
 \section{Framework Design}
 \label{sec:framework}
 
 \subsection{Architecture and Workflow}
 
-\todo{NOTE for US: Need to be discussed with YURY. application focus needed?}
+The framework provides a common execution environment for implementing,
+deploying, and evaluating dynamic-fee policies in Uniswap v4. It
+consists of three layers. The \emph{contract layer} contains the
+Solidity hook implementations, shared fee interface, and
+policy-specific state. The \emph{deployment layer} uses Foundry scripts
+to deploy the required Uniswap v4 contracts, tokens, mock price feeds,
+hook, and liquidity pool. The \emph{experiment layer} replays
+historical market observations, executes simulated user and arbitrage
+swaps, and converts the resulting contract and pool outputs into
+comparative metrics.
 
-The framework converts a supported dynamic-fee policy and its parameters into an inspectable, deployable, and experimentally testable Uniswap v4 project. It consists of four cooperating layers. The \emph{contract layer} contains the Solidity hooks, shared fee interface, and policy state. \todo{The \emph{application layer} uses Flask and browser code to load supported templates, expose their parameters, display generated source, and initiate project export or simulation. The \emph{deployment layer} uses Foundry scripts to deploy the selected hook together with the required Uniswap v4 contracts, tokens, feeds, and liquidity pool. Finally, the \emph{experiment layer} replays market observations through \texttt{Simulation.t.sol}, records contract and pool outputs, and converts them into metrics and figures.}
+The process proceeds as follows. Each experiment
+selects a policy implementation and parameter set, initializes a local
+Uniswap v4 pool with a common starting price and liquidity position,
+and deploys the required mock feeds. Historical observations update
+the external price reference, after which simulated swaps invoke the
+deployed hook. The experiment records the applied fees, token
+balances, gas usage, executed volume, and LP outcome.
 
-Figure~\ref{fig:workflow} summarizes the complete workflow. A developer first selects an available hook template and supplies its parameters. The generator creates a configured Solidity contract and packages it as a self-contained Foundry project. Deployment scripts then initialize a local Forge network, deploy the Uniswap v4 infrastructure and hook, and create a new pool associated with that hook. During evaluation, historical observations update Chainlink-compatible mock feeds, simulated swaps invoke the deployed contract, and the resulting fees, balances, gas usage, and LP outcomes are recorded.
+% Place Figure 1 here.
 
-\begin{figure*}[t]
-  \centering
-  \begin{tikzpicture}[
-      node distance=5mm,
-      box/.style={draw, rounded corners, align=center, minimum height=10mm,
-      text width=2.65cm, font=\footnotesize},
-      flow/.style={-{Latex[length=2mm]}, thick}
-    ]
-    \node[box] (input) {Hook template\& parameters};
-    \node[box, right=of input] (config) {Configuration and source generation};
-    \node[box, right=of config] (project) {Self-contained Foundry project};
-    \node[box, right=of project] (chain) {Forge and Uniswap v4 pool};
-    \node[box, right=of chain] (result) {Replay results and metrics};
-    \draw[flow] (input) -- (config);
-    \draw[flow] (config) -- (project);
-    \draw[flow] (project) -- (chain);
-    \draw[flow] (chain) -- (result);
-  \end{tikzpicture}
-  \caption{Configuration, deployment, and evaluation workflow.}
-  \label{fig:workflow}
-\end{figure*}
+All policies reuse the same deployment procedure, pool initialization,
+trader model, historical inputs, and result-processing pipeline. This
+separation allows matched runs to differ principally in their fee
+policy rather than in independently developed supporting
+infrastructure. The framework produces deployment logs, transaction
+traces, contract-level gas measurements, and structured experiment
+outputs for subsequent analysis.
 
-This separation allows different fee policies to reuse the same deployment, pool initialization, trader model, and result-processing path. Consequently, differences between experimental outcomes can be attributed to the fee policy rather than to independently developed supporting infrastructure. Each stage also produces an inspectable artifact, including configured Solidity source, deployment logs, transaction traces, and experiment outputs.
+\subsection{Hook Execution and Deployment}
 
-\subsection{Configuration and Project Generation}
+The five dynamic implementations share a fee-oriented interface based
+on \texttt{BaseOverrideFee}. When a swap invokes a hook, the common
+execution path first verifies that the callback originated from the
+designated \texttt{PoolManager} and determines the swap direction. The
+hook then reads its policy state and, when required, an external price
+observation. It computes the applicable fee, enforces the configured
+bounds, and returns the fee in the format expected by Uniswap v4.
+After the swap, the hook updates only the state required by its policy.
+Some policies update after every executed trade, whereas others update
+at most once per block.
 
-Let $C$ denote a supported Solidity hook template and let
-$\theta=[\theta_1,\ldots,\theta_n]$ denote its exposed parameters. The generator produces a configured contract
+The evaluated implementations are \texttt{BAHook}, \texttt{DAHook},
+\texttt{ABHook}, \texttt{VolatilityHook}, and
+\texttt{MEVChargeHook}. They respond, respectively, to signals derived
+from external price direction, executed trade direction, endogenous
+pool-price movement, recent external-price volatility, or trade size
+and sender activity. Section~\ref{sec:evaluation} defines their update
+rules and experimental parameters.
 
-\begin{equation}
-  C_{\theta}=\mathcal{G}(C,\theta).
-  \label{eq:generation}
-\end{equation}
+Uniswap v4 encodes hook permissions in the low-order bits of the hook
+address. Deployment must therefore find a compatible
+\texttt{CREATE2} salt, or use an equivalent deterministic procedure,
+to obtain an address with the required permission pattern
+\cite{uniswapHookDeployment}. The deployment scripts initialize the
+\texttt{PoolManager}, routing and position-management contracts, mock
+tokens, price feeds, hook, and pool. They then set the initial pool
+price and provide the common starting liquidity. Before a pool is
+used, the framework verifies that the hook address matches its declared
+callbacks because an incompatible permission bitmap can prevent the
+required hook logic from executing.
 
-The current implementation substitutes the selected values into a copy of the template while leaving the canonical source unchanged. Parameters can include initial fees, update increments, fee bounds, volatility sensitivity, and other policy-specific constants. The generated source is displayed before export so that the developer can inspect how the selected values affect the contract.
-
-The exported project contains the configured hook, required interfaces, deployment scripts, Foundry tests, dependency declarations, remappings, historical-data utilities, and execution instructions. Exporting the complete project, rather than only the generated contract, preserves the surrounding environment required to compile, deploy, and test the hook independently of the web interface.
-
-The generator operates only on supported, allowlisted templates. It does not synthesize an arbitrary fee algorithm or prove that a selected parameter combination is economically or semantically valid. For example, incorrectly ordered fee bounds or incompatible oracle addresses may still produce an unsuitable configuration. Generated contracts must therefore be compiled, tested, and checked before deployment. A typed parameter schema with stronger cross-parameter validation remains future work.
-
-\subsection{Hook Lifecycle and Deployment}
-
-The hook implementations share a fee-oriented interface based on
-\texttt{BaseOverrideFee}. When a swap invokes a hook, the common execution path first verifies that the callback originates from the designated \texttt{PoolManager} and determines the swap direction. The hook then reads its policy state and, where required, an external price observation; computes and bounds the applicable fee; and returns the protocol-formatted fee override. After an executed swap, the hook updates only the state required by its policy. Some policies update after every trade, whereas others update at most once per block.
-
-The comparative evaluation uses five dynamic implementations:
-\texttt{BAHook}, \texttt{DAHook}, \texttt{ABHook},
-\texttt{VolatilityHook}, and \texttt{MEVChargeHook}. These policies differ in whether they respond to block-level external prices, individual swap direction, endogenous pool-price movement, recent price variance, or trade size. Their policy-specific equations and parameter values are described separately in the evaluated-policy section. The broader library also contains a peg-stability template and its associated tests, but that policy is not included in the comparative experiment.
-
-Uniswap v4 encodes hook permissions in the low-order bits of the hook address. Deployment must therefore find a compatible \texttt{CREATE2} salt or use an equivalent deterministic procedure to obtain an address with the required permission pattern~\cite{uniswapHookDeployment}. The deployment utilities create or resolve the \texttt{PoolManager}, position-management, and routing contracts; deploy mock tokens and price feeds; deploy the configured hook; construct the pool key; initialize the pool price; and provide the initial liquidity. The permission bitmap is checked before the pool is used because an incompatible address can prevent required callbacks from executing.
-
-Historical Binance observations and Chainlink-compatible feeds serve different purposes. Binance provides the offline price and volume profiles used by the experiment, while the mock feeds expose those observations through the interface expected by oracle-dependent hooks. This arrangement tests contract integration deterministically; it does not reproduce the aggregation, update timing, latency, or failure behavior of a live Chainlink feed.
+Binance observations and Chainlink-compatible mock feeds serve
+different purposes. Binance supplies the offline price and volume
+series used by the historical replay. The mock feeds expose the
+relevant observations through the interface expected by
+oracle-dependent hooks. This arrangement provides identical,
+deterministic price inputs across matched runs. It tests contract
+integration but does not reproduce live-feed aggregation, update
+latency, or failure behavior.
 
 \subsection{Testing and Reproducibility}
 
-Testing separates shared framework behavior from policy-specific behavior. Common Foundry tests verify deployment, hook permissions, pool initialization, callback authorization, liquidity provision, and successful swaps. Policy tests verify fee direction, update granularity, parameter bounds, and state transitions. The supplied project includes general hook tests and specialized suites such as
-\texttt{MEVChargeHookFees.t.sol} and
-\texttt{PegStabilityHook.t.sol}. Longer replay tests use
-\texttt{Simulation.t.sol} to apply market observations and collect fee, balance, gas, volume, and LP outputs.
+Testing separates shared infrastructure behavior from policy-specific
+fee logic. Common Foundry tests verify hook deployment, address
+permissions, pool initialization, callback authorization, liquidity
+provision, and successful swap execution. Policy-specific tests verify
+fee direction, update frequency, parameter bounds, and state
+transitions. Historical replay tests execute the complete market
+sequence and collect fee, balance, gas, volume, and LP-outcome data.
 
-A reproducible experiment must identify both the configured contract and the context in which it was executed. Each experimental cell is therefore represented by
+A reproducible experimental result must identify both the evaluated
+policy and its execution context. We represent each experimental cell
+as
 
 \begin{equation}
-  E=\langle h(C_{\theta}),D,P_0,L_0,W,S\rangle,
+  E=
+  \langle h(C),\theta,D,P_0,L_0,W,S\rangle,
   \label{eq:manifest}
 \end{equation}
 
-where $h(C_{\theta})$ is the configured-source hash, $D$ identifies the compiler and dependency versions, $P_0$ and $L_0$ are the initial pool price and liquidity, $W$ identifies the historical market window, and $S$ contains the gas-price scenario, retail-demand level, and random seed. The historical input is additionally identified by a candle-data fingerprint.
+where $h(C)$ identifies the hook implementation, $\theta$ is its
+parameter vector, and $D$ identifies the compiler and dependency
+versions. The initial pool price and liquidity are denoted by $P_0$
+and $L_0$, respectively; $W$ identifies the historical market window;
+and $S$ contains the gas-price scenario, ordinary-user demand level,
+and random seed. A fingerprint of the historical candle data
+additionally identifies the replay input.
 
-All swaps are executed against local Uniswap v4 contracts in Foundry rather than calculated only by an off-chain model. Contract gas is measured from these executions, and LP holdings are reconstructed from both pool state and trader balance changes. Reusing the same manifest, market window, and random inputs across policies enables paired comparisons while keeping the surrounding experimental conditions fixed.
+All swaps execute against local Uniswap v4 contracts in Foundry rather
+than being calculated exclusively by an off-chain model. Gas usage is
+measured from these executions, while LP holdings are reconstructed
+from pool state and token balance changes. Reusing the same market
+window, starting state, gas scenario, and random inputs across policies
+enables paired comparisons in which the surrounding experimental
+conditions remain fixed.
 
 \section{Experimental Evaluation}
 \label{sec:evaluation}
 
-The evaluation addresses two questions: whether the framework can execute different fee policies through a common Uniswap v4 path, and whether any evaluated dynamic policy improves the LP outcome relative to a static fee under controlled market conditions.
+The framework's evaluation layer runs every fee policy and a family of
+static baselines over identical replayed market histories and scores the
+liquidity provider (LP) against simply holding the deposited tokens.
+The experiment evaluates the complete deploy--execute--measure path at scale and provides a controlled economic comparison of the implemented dynamic-fee policies, including their contract-level gas overhead. \textbf{\textit{Artifact availability: The source code, deployment and experiment scripts, policy configurations, and data-processing utilities will be made publicly available on GitHub upon acceptance.}}
 
-\subsection{Experimental Setup}
+\subsection{Evaluated Fee Policies}
 
-One experimental cell is defined by a fee policy, trading pair, one-day market window, gas-price scenario, and retail-demand level. Each cell replays 1{,}440 one-minute Binance candles from 2024 against a locally deployed Uniswap v4 pool. The initial full-range position is valued at 20M USDT and divided equally between the two assets. The pool opens at the first external price, and a Chainlink-compatible mock feed is updated with each candle close. The first 60 minutes are executed as warm-up and excluded from measurement.
-
-We study ETH/SHIB and ETH/USDC as volatile pairs and USDC/USDT as a stable pair. For every pair, complete days are ranked by daily realized volatility. Using one-minute closing prices ($P_{d,c}$), realized volatility is calculated as
-
-\begin{equation}
-  RV_d=
-  \sqrt{\sum_{c=2}^{1440}
-  \left[\ln\left(\frac{P_{d,c}}{P_{d,c-1}}\right)\right]^2}.
-  \label{eq:realized-volatility}
-\end{equation}
-
-The ranked days are divided into low-, medium-, and high-volatility terciles, from which 24 windows per tercile are retained. The resulting dataset contains 72 windows per pair and 216 pair-window combinations overall. Exact dates and candle fingerprints are stored with the experimental artifact.
-
-Every swap is executed in the Foundry EVM against the deployed pool and hook. A calibration run measures median gas consumption for each policy rather than assigning an assumed cost. These measurements are then used in trader decisions under gas prices of 5, 20, and 80 gwei. The experimental manifest defined in Eq.~\eqref{eq:manifest} records the configured-source hash, dependency versions, initial state, market window, gas price, demand level, and random seed. As an internal accounting check, LP holdings are reconstructed independently from pool state and trader balance changes; the two calculations agree within a relative error of approximately $10^{-16}$.
-
-\subsection{Trader and Demand Model}
-
-Order flow consists of simulated ordinary users and one gas-aware arbitrageur. These agents generate transactions against the historical price path; Binance candles provide external market conditions rather than individual Binance trades.
-
-\subsubsection{Arbitrageur}
-
-Let $P$ be the external price, $f$ the applicable swap fee, and $\gamma=1-f$. The fee creates a no-arbitrage interval $[P\gamma,P/\gamma]$. After ordinary-user flow in each minute, the arbitrageur moves the pool to the nearest interval boundary when the maximum expected profit exceeds transaction cost. For liquidity $L$, current square-root price $s$, and target square-root price $t$, the maximum profits in the two directions are
-
-\begin{equation}
-  \Pi^{*}_{0\rightarrow1}=\frac{L(s-t)^2}{s},
-  \qquad
-  \Pi^{*}_{1\rightarrow0}=\frac{L(t-s)^2}{\gamma s}.
-  \label{eq:arb-profit}
-\end{equation}
-
-A trade executes only when $\Pi^{*}>g p_{\mathrm{gas}}$, where $g$ is the measured gas consumption and $p_{\mathrm{gas}}$ is the scenario gas price. Because the fee produced by \texttt{MEVChargeHook} depends on trade size, its profit-maximizing size is found numerically using ternary search.
-
-\subsubsection{Ordinary users}
-
-For a candidate trade, $V_{\mathrm{in}}$ and $V_{\mathrm{out}}$ denote the input and output values at the external price, while $G$ denotes gas cost. The normalized user outcome is
-
-\begin{equation}
-  r=
-  \frac{V_{\mathrm{out}}-V_{\mathrm{in}}-G}
-  {V_{\mathrm{out}}+V_{\mathrm{in}}+G}.
-  \label{eq:uu-r}
-\end{equation}
-
-A non-negative outcome is always accepted. A loss-making trade is accepted probabilistically:
-
-\begin{equation}
-  P_{\mathrm{exec}}=
-  \begin{cases}
-    1, & r\geq 0,\\
-    e^{-\lambda |r|}, & r<0.
-  \end{cases}
-  \label{eq:uu-p}
-\end{equation}
-
-We set $\lambda\approx461.4$, which gives a representative trade with a 30-bps total cost an execution probability of approximately 0.5. This value is a behavioral assumption rather than an estimate from individual Binance users.
-
-For every minute $c$, one candidate trade is generated independently in each direction:
-
-\begin{equation}
-  q(c)=\frac{v_0(c)}{2}
-  e^{\sigma Z-\sigma^2/2},
-  \qquad
-  Z\sim\mathcal{N}(0,1),\quad \sigma=1.
-  \label{eq:trade-size}
-\end{equation}
-
-The lognormal multiplier generates heterogeneous trade sizes while preserving their expected aggregate value. Each candidate trade is executed in full or rejected according to Eq.~\eqref{eq:uu-p}.
-
-The minute-level potential demand is
-
-\begin{equation}
-  v_0(c)=\kappa B\hat{s}(c),
-  \label{eq:uu-demand}
-\end{equation}
-
-where $B=20$M USDT is the initial pool value and $\hat{s}(c)$ is the normalized 2024 intraday Binance volume profile. Because $\sum_c\hat{s}(c)=1$, $\kappa B$ is the potential daily retail demand. The five $\kappa$ values vary demand relative to pool value without changing its intraday shape.
-
-\begin{table}[t]
-  \caption{Retail-demand scenarios and arbitrage share under the 30-bps baseline.}
-  \label{tab:kappa}
-  \centering
-  \footnotesize
-  \begin{tabular}{lrr}
-    \toprule
-    $\boldsymbol{\kappa}$ &
-    \textbf{Potential demand/day} &
-    \textbf{Arbitrage share}\\
-    \midrule
-    0.03 & 0.6M USDT  & 89\%\\
-    0.10 & 2M USDT    & 58\%\\
-    0.30 & 6M USDT    & 25\%\\
-    1.00 & 20M USDT   & 13\%\\
-    3.00 & 60M USDT   & 16\%\\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-The reported arbitrage shares are simulation outputs, not externally imposed values. Low $\kappa$ produces little ordinary-user flow relative to liquidity, making arbitrage a larger fraction of executed volume. The $\kappa=1$ scenario is used as the reference point, while all conclusions are checked separately at the remaining levels.
-
-\subsection{Fee Policies}
-
-The experiment compares five dynamic policies with static fees of 5, 30, 60, and 100 bps. The 30-bps policy is the predeclared primary baseline. All policies use the same deployment, pool, trader, and accounting path. Table~\ref{tab:policies} summarizes the implemented rules and their measured median gas consumption, including the intrinsic transaction cost.
+All policies share the fee box $[1,100]$~bps, and every updated fee is
+clamped to that box.
+Directional fees are written $f^{0\to1}$ and $f^{1\to0}$; every fee starts at 30~bps unless
+noted. Gas is the EVM-measured median per swap, including the 21k
+intrinsic transaction cost. Table~\ref{tab:policies} summarizes each
+policy's signal, update rule, and concrete parameters.
 
 \begin{table*}[t]
-  \caption{Fee policies included in the comparative evaluation.}
+  \caption{The evaluated fee policies.}
   \label{tab:policies}
   \centering
   \footnotesize
-  \begin{tabular}{p{2.2cm}p{7.2cm}p{2.5cm}r}
+  \begin{tabular}{@{}llp{5.2cm}p{3.9cm}r@{}}
     \toprule
-    \textbf{Policy} & \textbf{Fee rule} & \textbf{Fee range} & \textbf{Gas}\\
+    \textbf{Policy} & \textbf{Update} & \textbf{Rule} &
+    \textbf{Parameters} & \textbf{Gas Used}\\
     \midrule
-    Static &
-    Constant and identical in both directions &
-    5, 30, 60, or 100 bps &
+    Static & never &
+    constant fee, both directions &
+    $f\in\{5,30,60,100\}$~bps; 30~bps = baseline &
     76--77k\\
-
-    \texttt{DAHook} &
-    After a swap, raises the fee in the executed direction by 1 bps and lowers the opposite fee by 1 bps &
-    1--100 bps &
+    \addlinespace
+    \texttt{DAHook} & every trade &
+    after a swap in direction $d$:
+    $f^{d}\!\leftarrow\! f^{d}\!+\!\delta$,
+    $f^{-d}\!\leftarrow\! f^{-d}\!-\!\delta$ &
+    $\delta=1$~bps &
     88k\\
-
-    \texttt{BAHook} &
-    Uses the external price-ratio direction and reallocates 5 bps between swap directions at most once per block &
-    1--100 bps &
+    \addlinespace
+    \texttt{BAHook} & once per block &
+    external ratio $\rho_b=p_{0,b}/p_{1,b}$ from two feeds:
+    $f^{0\to1}\!\leftarrow\! f^{0\to1}\!+\!\delta\operatorname{sgn}(\rho_{b-1}\!-\!\rho_b)$,
+    opposite side mirrored &
+    $\delta=5$~bps &
     108k\\
-
-    \texttt{ABHook} &
-    Responds to the pool-price movement while maintaining a constant 60-bps sum across the two directions &
-    1--59 bps per side &
+    \addlinespace
+    \texttt{ABHook} & every trade &
+    $\Delta_t$ = relative $\sqrt{\text{price}}$ move of the \emph{pool
+    itself}: $f^{0\to1}\!\leftarrow\! f^{0\to1}\!-\!c\,\Delta_t$,
+    $f^{1\to0}=K-f^{0\to1}$ &
+    $c=100$~bps per unit move; $K=60$~bps (each side in $[1,59]$~bps) &
     94k\\
-
-    \texttt{VolatilityHook} &
-    Applies the same fee in both directions using an exponentially weighted estimate of external-price variance &
-    1--100 bps &
+    \addlinespace
+    \texttt{VolatilityHook} & once per block &
+    $f=f_{\mathrm{base}}+c\,\hat{\sigma}$, both directions;
+    $\hat{\sigma}$ = EMA per-minute st.\ dev.\ of the external ratio's
+    relative change &
+    $f_{\mathrm{base}}=20$~bps, $c=2\times10^{6}$, $\alpha=0.1$ &
     123k\\
-
-    \texttt{MEVChargeHook} &
-    Adds trade-size and recent-sender surcharges to a 30-bps base fee &
-    30--100 bps &
-    95k\\
+    \addlinespace
+    \texttt{MEVChargeHook} & every trade &
+    30~bps base + surcharges in trade size and for repeated senders &
+    cooldown 15~s; range $[30,100]$~bps &
+    95k \\
     \bottomrule
   \end{tabular}
 \end{table*}
 
-The complete factorial design is
+\texttt{DAHook}, \texttt{ABHook}, and \texttt{MEVChargeHook} are
+endogenous stands their oracle arguments are unused; \texttt{BAHook} and
+\texttt{VolatilityHook} read two Chainlink-compatible feeds, which is what their higher gas reflects.
+
+\subsection{Simulated Market and Reproducibility}
+
+One \emph{cell} of the experiment's factorial matrix, a
+combination of fee policy, trading pair, day-window, and gas-price
+scenario, replays a \emph{window} of 1{,}440 one-minute Binance
+candles from 2024 against a Uniswap~v4 pool holding a 20M~USDT basket,
+split equally by value into a full-range position. The pool opens at the external market price of the first
+candle; a mock Chainlink-compatible feed tracks each candle's close; the
+first 60 candles execute but are excluded from measurement. Three pairs
+are studied: ETH/SHIB and ETH/USDC (volatile) and USDC/USDT (stable). Windows are stratified
+by realized volatility into terciles (24 calm, 24 medium, and 24
+stormy days per pair), so market regimes are represented by design.
+
+Every cell is identified by the manifest of Eq.~\eqref{eq:manifest}, so any
+change to a contract or input identifies exactly the affected cells.
+Because every
+swap executes in a real EVM (Forge), gas is \emph{measured} rather
+than assumed: a calibration run records each policy's median gas per
+swap (76k for the static hook, 88--124k for the adaptive ones), and
+these measured figures feed back into both traders' decisions below.
+Fees follow v4 accounting exactly: they accrue to the position and do
+not compound.
+
+\subsection{Simulated User and Arbitrage Flow}
+
+Following the standard microstructure framing, order flow is split into informed arbitrageurs and uninformed users (UUs).
+
+\subsubsection{Arbitrageur}
+With fee fraction $f$ and $\gamma=1-f$, the pool price may sit anywhere inside the no-arbitrage band $[P\gamma,\,P/\gamma]$ around the external price $P$. Once per candle, after the retail flow, the arbitrageur moves it to the nearest band edge if profitable \emph{after gas}: with pool liquidity $L$, sqrt-price $s$ and target $t$, the closed-form profit
 
 \begin{equation}
-  9\ \text{policies}
-  \times3\ \text{pairs}
-  \times72\ \text{windows}
-  \times3\ \text{gas levels}
-  \times5\ \text{demand levels}
-  =29{,}160\ \text{cells}.
+  \Pi^{*}_{0\to1}=\frac{L(s-t)^{2}}{s},\qquad
+  \Pi^{*}_{1\to0}=\frac{L(t-s)^{2}}{\gamma s},
+  \label{eq:arb-profit}
 \end{equation}
+must exceed $g\,p_{\mathrm{gas}}$, where $g$ is the policy's measured median gas and $p_{\mathrm{gas}}$ the scenario's gas price (5, 20, or 80~gwei), valued at the ETH price series. For the size-dependent \texttt{MEVChargeHook} the optimum is found by ternary search because profit is unimodal in size.
 
-\subsection{Outcome and Statistical Comparison}
-
-The LP outcome for a cell is measured relative to holding the initially deposited assets:
-
+\subsubsection{Uninformed users}
+Ordinary-user behavior follows the acceptance model proposed in~\cite{lebedeva2025dynamic}: a candidate trade evaluates the normalized
+outcome ratio
 \begin{equation}
-  Y(T)=V_{\mathrm{LP}}(T)+R_f(T)-V_{\mathrm{H}}(T)
-  =R_f(T)-IL(T),
-  \label{eq:lp-outcome}
+  r=\frac{V_{\mathrm{out}}-V_{\mathrm{in}}-G}
+  {V_{\mathrm{out}}+V_{\mathrm{in}}+G},
+  \label{eq:uu-r}
 \end{equation}
+where $V_{\mathrm{in}}$ and $V_{\mathrm{out}}$ are the two legs valued
+at external prices, and
+$G$ is the trade's own gas. Execution has a probability
+\begin{equation}
+  P_{\mathrm{exec}}=
+  \begin{cases}
+    1, & r\ge 0,\\
+    e^{-\lambda|r|}, & r<0,
+  \end{cases}
+  \label{eq:uu-p}
+\end{equation}
+with parameter $\lambda=\ln 2/|r(30\,\mathrm{bps})|
+\approx 461.4$, so that half of the willing flow declines at a 30~bps
+total transaction cost.
 
-where $V_{\mathrm{LP}}(T)$ is the terminal LP position, $R_f(T)$ is fee income, and $V_{\mathrm{H}}(T)$ is the terminal value of holding the initial assets. All components are valued in USDT at the end-of-window external price.
+Each minute $c$, each direction independently draws one candidate trade
+of size
+\begin{equation}
+  q(c)=\frac{v_0(c)}{2}\;e^{\sigma Z-\sigma^{2}/2},
+  \qquad Z\sim\mathcal{N}(0,1),\ \ \sigma=1,
+  \label{eq:uu-size}
+\end{equation}
+where $v_0(c)$ is the minute's potential demand (Eq.~\eqref{eq:uu-demand} below), split equally between the two directions. The lognormal multiplier is mean-preserving ($\mathbb{E}[e^{\sigma Z-\sigma^{2}/2}]=1$), so randomness produces realistic heavy-tailed trade sizes without distorting the calibrated volume; the trade then executes all-or-nothing with probability $P_{\mathrm{exec}}$. Trades are discrete and pre-generated from a recorded seed.
 
-Comparisons are paired. A policy is differenced against the 30-bps baseline using the same pair, window, gas price, demand level, and random inputs. This removes between-day variation unrelated to the fee rule. Effects are reported as median paired differences with 95\% percentile-bootstrap confidence intervals obtained from 10{,}000 seeded resamples. A policy is classified as better or worse only when the interval excludes zero. Results from different $\kappa$ levels are analyzed separately.
+\subsubsection{Demand calibration}
+
+The minute-level potential demand $v_0(c)$ combines a measured intraday shape with one assumed scale parameter, $\kappa$. With $V_0(c),V_1(c)$ the 2024 per-minute Binance quote volumes of the pair's two legs, the intraday shape is
+\begin{equation}
+  \hat{s}(c)=\frac{g(c)}
+  {\left<{\sum_{c'\in\mathrm{day}}g(c')}\right>},\qquad
+  g(c)=\sqrt{V_0(c)\,V_1(c)},
+  \label{eq:uu-shape}
+\end{equation}
+where the average is taken over the days of 2024, so $\hat{s}$ sums to one
+over an average day, and
+\begin{equation}
+  v_{0}(c)=\kappa\cdot \mathrm{basket}\cdot\hat{s}(c),
+  \label{eq:uu-demand}
+\end{equation}
+with the basket the pool's initial 20M~USDT deposit. Hence $\kappa$ is
+the pool's daily turnover relative to its own TVL. We treat $\kappa=1$ as a reference point. The
+experiment is
+repeated at $\kappa\in\{0.03,0.1,0.3,1,3\}$ which moves the measured arbitrage share
+of volume across $89\%,58\%,25\%,13\%,16\%$ (Fig.~\ref{fig:demand}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{Image/uu_demand_calibration.pdf}
+  \caption{Demand calibration, Eq.~\eqref{eq:uu-demand}: the intraday
+    shape $\hat{s}(c)$ is measured (median 2024 day of the pair's Binance
+    legs); $\kappa$ scales its height, and the height
+  sets the arbitrage share of volume the experiment measures.}
+  \label{fig:demand}
+\end{figure}
+
+\subsection{Design and Statistics}
+
+One operating point is a full factorial over 9 policy configurations (the five hook policies plus static baselines at 5/30/60/100~bps), times 3 pairs, 72 windows, and 3 gas scenarios: 5{,}832 cells. Five operating points give 29{,}160 cells. The LP outcome of a cell is the fee-adjusted net result $\mathrm{LPNet}=R_f-IL$ of Eq.~\eqref{eq:lpnet}: the LP's position and accrued fees against simply holding the deposit, marked at end-of-window prices.
+
+Every comparison is \emph{paired}: a policy's window result is differenced against the 30~bps static baseline on the same window, pair, and gas price, removing the day-to-day variation that dwarfs policy effects. Effects are reported as the median paired difference with a 95\% percentile-bootstrap confidence interval over 10{,}000 seeded resamples. Headline numbers aggregate cell-first (one median per pair$\times$regime$\times$gas cell, then across cells), so three gas scenarios of one day are never treated as independent observations.
 
 \subsection{Results}
 
-\begin{table}[t]
-  \caption{Paired advantage over the 30-bps baseline at $\kappa=1$, aggregated over 18 volatile-pair strata. Values are USDT per window.}
+\subsubsection{Aggregate Performance}
+
+Table~\ref{tab:headline} reports the aggregate comparison at the
+reference demand level, $\kappa=1$. For each matched run, the
+advantage of policy $p$ over static 30~bps is
+
+\begin{equation}
+  \Delta_{p,w}
+  =
+  \mathrm{LPNet}_{p,w}
+  -
+  \mathrm{LPNet}_{30,w},
+  \label{eq:paired-advantage}
+\end{equation}
+
+where $w$ identifies the common historical window and experimental
+conditions. A positive value favors policy $p$, whereas a negative
+value favors static 30~bps.
+
+The aggregate estimate covers 18 strata formed by two volatile pairs,
+three volatility regimes, and three gas-price scenarios. None of the
+five dynamic hooks has a statistically significant positive aggregate
+advantage. \texttt{BAHook} is not distinguishable from static 30~bps,
+while \texttt{DAHook}, \texttt{ABHook},
+\texttt{VolatilityHook}, and \texttt{MEVChargeHook} produce
+significantly lower LP outcomes.
+
+\begin{table}[!t]
+  \caption{Paired LP-outcome difference relative to static 30~bps at
+    $\kappa=1$. Values are medians across the 18
+    pair$\times$volatility$\times$gas strata with 95\% bootstrap
+  confidence intervals. Positive values favor the evaluated policy.}
   \label{tab:headline}
   \centering
   \footnotesize
-  \begin{tabular}{lrr}
+  \begin{tabular}{lr}
     \toprule
-    \textbf{Policy} & \textbf{Median $\Delta$} & \textbf{95\% CI}\\
+    \textbf{Policy} &
+    \textbf{$\Delta$ vs.\ 30 bps, USDT/window}\\
     \midrule
-    Static 60 bps          & (-2)   & ([-186,266])\\
-    \texttt{BAHook}        & (-100) & ([-453,350])\\
-    \texttt{DAHook}        & (-235) & ([-381,-104])\\
-    \texttt{ABHook}        & (-460) & ([-630,-288])\\
-    \texttt{VolatilityHook}        & (-752) & ([-1069,-280])\\
-    \texttt{MEVChargeHook} & (-913) & ([-1659,-728])\\
+    Static 60 bps                  & $-2\;[-186,+266]$\\
+    \texttt{BAHook}                & $-100\;[-453,+350]$\\
+    \texttt{DAHook}                & $-235\;[-381,-104]$\\
+    \texttt{ABHook}                & $-460\;[-630,-288]$\\
+    \texttt{VolatilityHook}        & $-752\;[-1069,-280]$\\
+    \texttt{MEVChargeHook}         & $-913\;[-1659,-728]$\\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsubsection{Aggregate performance}
+Repeating the aggregate comparison at the other four demand levels
+produces the same principal conclusion: no dynamic hook has a
+statistically significant positive aggregate advantage over static
+30~bps at any evaluated $\kappa$. Some hooks, however, have
+statistically significant negative effects.
 
-Table~\ref{tab:headline} presents the primary comparison at $\kappa=1$. When results are aggregated across volatility regimes and gas scenarios, no dynamic policy significantly outperforms the 30-bps baseline. The confidence interval for \texttt{BAHook} includes zero, while the other four dynamic policies produce significantly lower outcomes. The exploratory 60-bps comparison is statistically indistinguishable from 30 bps.
+Decomposing the paired outcomes shows that the impermanent-loss
+component differs by only single-digit USDT across policies, whereas
+fee-income differences reach hundreds of USDT. In this simulation,
+arbitrage returns the pool close to the external price under every
+policy by the end of each window. Consequently, the evaluated policies
+affect LP outcomes mainly through the fees collected from executed
+flow. Their higher gas requirements also affect outcomes indirectly by
+changing which user and arbitrage trades remain economical. These
+results apply to the present trader model and should not be interpreted
+as evidence that dynamic fees cannot affect adverse selection in other
+market settings.
 
-The static policies produce mean outcomes of approximately 1.6k, 11.9k, 11.9k, and 7.9k USDT per window at 5, 30, 60, and 100 bps, respectively. Thus, under the assumed user-participation model, the static-fee curve contains a broad optimum around 30--60 bps rather than improving monotonically with the fee.
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{Image/uu_regime_gas_grid.pdf}
+  \caption{Paired LP-outcome difference between each dynamic hook and
+    static 30~bps, separated by volatility regime and gas price. Points
+    to the right of zero favor the hook; points to the left favor the
+    baseline. Each panel shows $\kappa=1$ in the upper white region and
+    $\kappa=0.1$ in the lower shaded region. Filled markers have 95\%
+    bootstrap intervals that exclude zero: blue indicates a significant
+    advantage and red a significant disadvantage. Open grey markers are
+    not statistically distinguishable from the baseline. Each estimate
+  pools 48 matched windows from ETH/SHIB and ETH/USDC.}
+  \label{fig:grid}
+\end{figure}
 
-Variation in LP outcome is driven primarily by fee income and retained trading volume. The impermanent-loss component differs by only single-digit USDT across policies because the modeled arbitrageur moves terminal pool prices close to the external price. Under these assumptions, adaptation changes how flow is priced but does not materially change terminal inventory loss.
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{Image/uu_seed_robustness.pdf}
+  \caption{Robustness of the high-volatility, 5~gwei estimates to the
+    random user-flow seed. For each policy, the bold marker shows the
+    main factorial estimate from 48 paired windows, followed by five
+    seed repetitions using 16 paired windows each. Filled markers have
+    95\% bootstrap intervals that exclude zero. The repetitions preserve
+    the sign of the corresponding main estimate, while their intervals
+  are wider because they use one-third as many windows.}
+  \label{fig:seed-robustness}
+\end{figure}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{Image/uu_kappa_trend_high.pdf}
+  \caption{Paired LP-outcome difference relative to static 30~bps
+    across the five ordinary-user demand levels during high-volatility
+    windows. Values above zero favor the hook. Colours distinguish the
+    5, 20, and 80~gwei gas-price scenarios. The percentages below the
+    horizontal axis report the arbitrage share measured under the static
+  30~bps baseline.}
+  \label{fig:kappa-trend-high}
+\end{figure}
 
 \subsubsection{Conditional performance}
 
-Although no policy wins in aggregate, conditional advantages appear in high-volatility, low-gas scenarios. At $\kappa=1$ and 5 gwei, \texttt{BAHook} improves the median LP outcome by (1{,}556) USDT per high-volatility window, with a 95\% confidence interval of ([894,2{,}501]). Its advantage in medium-volatility windows is (367,[115,571]) USDT.
+Splitting results by both experimental axes together shows a consistent pattern (Fig.~\ref{fig:grid}): every policy's advantage over the baseline improves monotonically with volatility and degrades monotonically with gas, in every regime and at every $\kappa$. At the reference point ($\kappa{=}1$), \texttt{BAHook} beats the baseline by $+1{,}556\;[+894,+2{,}501]$ USDT per window in high-volatility windows at 5~gwei, but loses or ties at 80~gwei. Which policy carries this advantage shifts with the flow mix (Fig.~\ref{fig:kappa-trend-high}): \texttt{BAHook} at retail-dominated $\kappa$, \texttt{VolatilityHook} and \texttt{DAHook} at informed-heavy $\kappa$.
 
-The policy associated with this advantage changes with order-flow composition. At $\kappa=0.1$, the \texttt{VolatilityHook} and \texttt{DAHook} outperform the baseline in high-volatility, 5-gwei windows by (308,[32,742]) and (246,[59,563]) USDT, respectively. At $\kappa=0.03$, the \texttt{VolatilityHook} retains an advantage in high-volatility windows across all three gas scenarios. These subgroup results are exploratory and should not be interpreted as universal policy rankings.
-
-\begin{figure*}[t]
-  \centering
-  \begin{minipage}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{Image/uu_regime_gas_grid.pdf}
-  \end{minipage}\hfill
-  \begin{minipage}[t]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\linewidth]{Image/uu_kappa_trend_high.pdf}
-  \end{minipage}
-  \caption{Conditional policy performance. Left: paired advantage over the 30-bps baseline by volatility regime and gas price at $\kappa=1$. Right: high-volatility performance across demand levels and gas prices. Filled markers indicate 95\% confidence intervals that exclude zero.}
-  \label{fig:conditional-performance}
-\end{figure*}
+These conditional findings are stable across random seeds: five seed repetitions using 16 paired windows each preserves the sign of every conditional finding (Fig.~\ref{fig:seed-robustness}), and \texttt{ABHook} stays significantly negative at nearly every seed, showing the procedure also detects real disadvantages.
 
 \subsubsection{Gas overhead}
 
-Gas is a first-order determinant of the results. Dynamic hooks consume 88--123k gas per swap, compared with 76--77k for the static implementation. This additional cost enters ordinary-user acceptance and arbitrage profitability. At 80 gwei, every dynamic policy either loses to or is statistically indistinguishable from the baseline. Even the static implementation costs approximately \$19 per swap in that scenario, equivalent to about 47 bps for a representative \$4{,}000 trade. As gas increases from 5 to 80 gwei at $\kappa=1$, the arbitrage share of executed volume rises from 12.4\% to 13.7\% because smaller ordinary-user trades are rejected first.
+The gas gradient follows directly from the policies' own overhead. Oracle-reading hooks cost 108--124k gas per swap against the static hook's 76k, and that difference enters retail's acceptance test through $G$ in Eq.~\eqref{eq:uu-r}. The informed share of volume rises with gas accordingly, from 12.4\% to 13.7\% across 5$\to$80~gwei at $\kappa{=}1$, as small retail trades are priced out first.
 
-Overall, the results show that dynamic fees provide no unconditional advantage over a well-chosen static fee. They can improve LP outcomes in specific high-volatility, low-gas settings, but the relevant policy depends on order-flow composition and its advantage can be eliminated by additional execution cost.
+Overall, none of the evaluated dynamic policies outperforms a well-chosen static fee unconditionally. A reproducible conditional advantage exists in high-volatility windows at low gas prices; which policy carries it depends on the informed share of flow, and the advantage disappears as higher hook gas costs reduce the set of economically executable trades. For the framework, what matters here is that this conditional structure could be measured at all: paired, seed-checked, and decomposed along pre-declared axes, with every policy running through the same implementation path.
 
-\subsection{Threats to Validity}
+% \subsection{Threats to Validity}
 
-The evaluation uses historical market observations but simulated order flow. Ordinary users follow a probabilistic acceptance rule and have no strategic or correlated behavior. One perfectly informed arbitrageur acts once per minute without mempool competition, latency, transaction reordering, or competing arbitrageurs. These assumptions simplify real DEX microstructure.
-
-Liquidity is passive and full-range, and the initial position is fixed at 20M USDT. The demand scale $\kappa$ is varied for sensitivity analysis but is not calibrated to individual Uniswap pools. One candidate trade per direction per minute produces coarser order flow than a transaction-level replay. The main matrix also uses a single recorded random seed.
-
-The market data cover one year, three pairs, and one centralized exchange. The USDC/USDT scenario uses a synthetic unit feed for one leg. Chainlink-compatible mocks validate the hook interface but not live-oracle aggregation, latency, update thresholds, or failures. Local Foundry execution measures contract gas deterministically but does not reproduce public-chain congestion or routing competition.
-
-Finally, the 30-bps baseline was selected before aggregation, whereas the conditional high-volatility findings were identified after examining the regime-level results and are therefore exploratory. The conclusions establish behavior under the declared model and should not be interpreted as evidence that the same policy will perform identically in a production pool.
+% \todo{
+% The declared model limits: retail has no strategy and no correlated
+% demand; one arbitrageur acts once per candle with perfect information
+% and no mempool competition; liquidity is passive and full-range; mock
+% feeds validate integration, not live oracle behavior; the retail scale
+% $\kappa$ is an assumption swept over two orders of magnitude rather than
+% calibrated to real pools; retail lumpiness is fixed at one trade per
+% direction per minute; results cover one year, three pairs, one venue's
+% data, and a single RNG seed (a five-seed robustness appendix is defined
+% in the artifact). The conditional corner finding was not pre-registered
+% and is reported as observed structure; the unconditional findings and
+% the failed-and-reported gas prediction follow the pre-registered
+% protocol.
+% }
 
 \section{Security, Validity, and Discussion}
 \label{sec:discussion}
@@ -466,23 +650,37 @@ Finally, the 30-bps baseline was selected before aggregation, whereas the condit
 
 Dynamic-fee hooks execute inside the swap lifecycle and enlarge the trusted code surface. Production implementations should restrict setters, accept callbacks only from the designated \texttt{PoolManager}, enforce protocol and policy fee bounds, normalize oracle decimals, reject stale or nonpositive rounds, and handle division and casts safely. Address-permission validation is essential. Uniswap's security guidance emphasizes that incorrectly encoded permissions or custom deltas can produce unintended execution paths~\cite{uniswapSecurityFramework}.
 
-The web layer crosses a separate trust boundary. Hook names should be allowlisted; parameter types and ranges should be validated before substitution; generated files should be written to isolated temporary locations; and simulator arguments must not become shell fragments. Resource limits are needed because compilation and replay are user-triggered operations. Exported projects should pin revisions to prevent later dependency changes from silently altering a result.
-
-Between the contract and application layers sits a data boundary: the implementation must check feed identity, sign, decimals, and timestamp, and define behavior for unavailable observations. Contract- and data-boundary threats admit code-level tests; application-layer risks and historical-replay bias instead require common baselines, multiple regimes, and explicit experimental reporting.
+The historical-data and oracle interface forms a separate trust boundary. The implementation must check feed identity, sign, decimals, and timestamp and define its behavior when observations are unavailable. Contract- and data-boundary threats admit code-level tests, whereas historical-replay bias requires common baselines, multiple regimes, and explicit experimental reporting.
 
 \subsection{Validity and Design Trade-offs}
 
-Local execution provides deterministic debugging but not public-chain market microstructure. Historical replay omits mempool visibility, block-builder ordering, latency, gas competition, strategic arbitrage, and endogenous routing. Results also depend on initial price and liquidity, token decimals, observation frequency, trade sizes, valuation time, and the share of informed flow. One pair and interval cannot establish generality, particularly across volatile, stablecoin, and shallow-liquidity markets.
+Local EVM execution provides reproducible contract behavior but does
+not reproduce public-chain market microstructure. The historical
+replay omits mempool visibility, block-builder ordering, latency,
+competitive gas bidding, strategic arbitrage, and endogenous routing.
+The results also depend on the assumed starting liquidity, trade-size
+distribution, observation frequency, user-acceptance model, and
+external-price process. Although the evaluation covers three pairs and
+72 one-day windows per pair, it does not establish generality across
+all assets, liquidity ranges, pool depths, or live-market conditions.
+The findings should therefore be interpreted as controlled comparative
+evidence rather than predictions of live-pool profitability.
 
-The framework's main benefit is separation of concerns: researchers can change $\mathcal{F}$ in Eq.~\eqref{eq:policy} while retaining deployment, ingestion, and analysis. Generated source remains inspectable, and mocks make integration tests repeatable. The trade-off is that textual template substitution is less safe and expressive than a typed policy language; mock feeds validate calls but not production oracle behavior; and console parsing is less robust than a structured event-level result format.
-
-Developing robust backtesting infrastructure for AMM strategies is an active area of research~\cite{urusov2025backtesting}. A controlled economic study within such a framework should hold the trace, initial reserves, liquidity range, valuation convention, and random seed constant while varying only the policy. It should compare all hooks with static-fee baselines and report LP value, fee income, IL or LVR, net outcome, retained volume, mean and distribution of fees, gas overhead, and runtime. Multiple pairs, volatility regimes, and repeated windows are required for uncertainty estimates. These additions are future evaluation work, not evidence inferred from the current trace.
-
-The next implementation steps are therefore a typed parameter schema, containerized and version-pinned experiments, event-level result export, property-based tests for fee bounds and callback authorization, stale-oracle fault injection, and testnet validation. Together they would turn the current development framework into a stronger comparative research testbed. Furthermore, the framework is designed to easily accommodate emerging fee paradigms, such as trade-size-aware Impermanent-Loss Trimming (ILT) mechanisms and path-independent fee structures that preserve composability guaranties under transaction fragmentation \cite{11575501}.
+The framework holds the historical window, starting state, gas
+scenario, demand level, and random inputs constant while changing the
+fee policy, following the principles of controlled AMM backtesting
+\cite{urusov2025backtesting}. Deterministic mock feeds and local
+execution make these comparisons repeatable, but they do not reproduce
+live-oracle latency, aggregation, or failure behavior. Future work
+should add version-pinned execution environments, structured
+event-level output, stale-oracle fault injection, property-based
+contract tests, and public-testnet validation. The same framework can
+also support emerging mechanisms such as trade-size-aware and
+path-independent fee policies~\cite{11575501}.
 
 \section{Conclusion}
 
-This paper presented an end-to-end framework for configuring, deploying, and replay-testing dynamic-fee hooks on Uniswap v4. Shared contracts and scripts isolate policy logic from protocol bootstrap; the web interface exposes parameters and source; and the experiment path connects historical observations to local execution and metrics. A 1,492-swap ETH/SHIB trace demonstrates that the integrated workflow operates. It does not prove that a dynamic policy outperforms static fees. The contribution is transparent, reusable infrastructure that enables such policies to be implemented and, with controlled baselines and broader traces, compared reproducibly.
+This paper presented a reproducible framework for deploying and evaluating dynamic-fee hooks on Uniswap~v4. The framework separates fee-policy logic from protocol setup and connects common Solidity implementations, permission-aware deployment, historical market observations, local EVM execution, and comparative LP metrics. Using this common workflow, we compared five dynamic hooks with four static-fee configurations in 29{,}160 experimental cells spanning three token pairs, 72 one-day windows per pair, three gas-price scenarios, and five demand levels. No dynamic policy outperformed the predeclared 30~bps baseline unconditionally. Improvements were confined to high-volatility, low-gas conditions and depended on the balance between ordinary-user and arbitrage volume; higher gas costs eliminated these gains. The contribution is therefore both engineering and empirical: reusable infrastructure for controlled hook comparison and evidence that dynamic fees are conditionally, rather than universally, beneficial.
 
 \IfFileExists{IEEEtran.bst}{\bibliographystyle{IEEEtran}}{\bibliographystyle{unsrt}}
 \bibliography{reference}
