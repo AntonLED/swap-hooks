@@ -13,7 +13,7 @@ the paired statistical evaluation of the LP outcome.
 
 The code follows the three layers described in the paper.
 
-### 1. Contract layer -— `contracts/src/`
+### 1. Contract layer -- `contracts/src/`
 
 The dynamic-fee hooks, built on OpenZeppelin's `uniswap-hooks`
 (`BaseOverrideFee`). Each hook returns its fee from `beforeSwap` and updates its
@@ -30,7 +30,7 @@ own state after a swap.
 | `CustomBaseHook.sol`, `interfaces/`                  | shared fee interface                                         |
 | `libraries/ArbMath.sol`, `UUMath.sol`, `Welford.sol` | arbitrage optimum, user acceptance model, online variance    |
 
-### 2. Deployment layer —- `contracts/test/utils/`
+### 2. Deployment layer -- `contracts/test/utils/`
 
 Deploys everything a hook needs on a local EVM.
 
@@ -45,7 +45,7 @@ The hook's permissions are checked at deployment (`BaseHook` validates its
 address against `getHookPermissions()`), and
 `contracts/test/HookPermissions.t.sol` tests them for every hook.
 
-### 3. Experiment layer —- `contracts/test/Replay.t.sol`, `experiments/`, `analysis/`
+### 3. Experiment layer -- `contracts/test/Replay.t.sol`, `experiments/`, `analysis/`
 
 | path                                                   | role                                                                                                                                   |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -275,3 +275,19 @@ points are told apart by filename prefix (`uu_`, `uu_t01_`, …).
   model, parameters, and results (Russian copy `.ru.md` beside it)
 - `docs/superpowers/specs/` — the dated experiment designs and pre-registrations
 - `docs/superpowers/plans/PROGRESS.md` — the running project log
+
+### License and Third-Party Code
+
+Our code is released under the MIT License (see `LICENSE`).
+
+A few test utilities are copied from Uniswap projects and keep their original
+license headers:
+
+| File                                          | Source                                                                                          | Header             |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------ |
+| `contracts/test/utils/BaseTest.sol`           | [`uniswapfoundation/v4-template`](https://github.com/uniswapfoundation/v4-template)             | `UNLICENSED`       |
+| `contracts/test/utils/Deployers.sol`          | `uniswapfoundation/v4-template`, modified                                                       | `UNLICENSED`       |
+| `contracts/test/utils/libraries/EasyPosm.sol` | `uniswapfoundation/v4-template`                                                                 | `GPL-2.0-or-later` |
+| `contracts/test/utils/PoolDonateTest.sol`     | [`Uniswap/v4-core`](https://github.com/Uniswap/v4-core) `src/test/PoolDonateTest.sol`, modified | `UNLICENSED`       |
+
+Dependencies under `contracts/lib/` are git submodules under their own licenses.

@@ -73,11 +73,11 @@ results/
 learning/
 .work/
 
-# Side-repo 
-dex/
-dex-framework/
 
 results*/
 
 # Internal reviewer notes — not part of the public artifact
 docs/reviews/
+
+# Local assistant instructions — not part of the public artifact
+CLAUDE.md

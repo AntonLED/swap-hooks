@@ -36,6 +36,5 @@ addopts = ["-m", "not slow"]
 
 [tool.ruff]
 exclude = [
-    "dex", 
     "contracts",
 ]
