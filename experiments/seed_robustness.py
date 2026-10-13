@@ -31,6 +31,7 @@ import pandas as pd
 
 from experiments.calibrate_gas import load as load_gas
 from experiments.matrix import BASKET_USDT, DEFAULT_GAS_ESTIMATE, load_windows
+from experiments.policies import ALL as ALL_POLICIES
 from experiments.policies import by_name
 from experiments.run_one import kappa_for_pair, run_one
 
@@ -156,8 +157,20 @@ def _one(job):
         shutil.rmtree(work, ignore_errors=True)
 
 
-def run(workers: int = 10, turnover: float = TURNOVER_DEFAULT) -> pd.DataFrame:
+def run(
+    workers: int = 10,
+    turnover: float = TURNOVER_DEFAULT,
+    policies: tuple[str, ...] | None = None,
+) -> pd.DataFrame:
+    """Run the appendix and return the full table for this operating point.
+
+    `policies` restricts the work to those configurations and MERGES their rows
+    into the table already on disk, replacing any earlier rows of the same
+    policies. Writing only the restricted rows would drop the baseline that
+    every comparison is paired against.
+    """
     root, stem = paths_for(turnover)
+    selected = POLICIES if policies is None else tuple(policies)
     root.mkdir(parents=True, exist_ok=True)
     gas = load_gas()
     windows = load_windows(per_tercile=WINDOWS_PER_TERCILE)
@@ -172,14 +185,14 @@ def run(workers: int = 10, turnover: float = TURNOVER_DEFAULT) -> pd.DataFrame:
             gas.get(policy, DEFAULT_GAS_ESTIMATE),
             turnover,
         )
-        for policy in POLICIES
+        for policy in selected
         for pair in PAIRS
         for seed in SEEDS
         for window in windows[pair[0]]
         for gas_price in GAS_PRICES_WEI
     ]
     print(
-        f"{len(jobs)} cells: {len(POLICIES)} policies x {len(PAIRS)} pairs x "
+        f"{len(jobs)} cells: {len(selected)} policies x {len(PAIRS)} pairs x "
         f"{len(SEEDS)} seeds x {len(windows[PAIRS[0][0]])} windows x "
         f"{len(GAS_PRICES_WEI)} gas at {turnover:g}x the calibrated kappa "
         f"-> {root.relative_to(ROOT)}/"
@@ -194,6 +207,10 @@ def run(workers: int = 10, turnover: float = TURNOVER_DEFAULT) -> pd.DataFrame:
                 print(f"  {i}/{len(jobs)}", flush=True)
 
     frame = pd.DataFrame(rows)
+    if policies is not None:
+        previous = pd.read_csv(root / f"{stem}.csv")
+        previous = previous[~previous["policy"].isin(selected)]
+        frame = pd.concat([previous, frame], ignore_index=True)
     frame.to_csv(root / f"{stem}.csv", index=False)
     return frame
 
@@ -311,9 +328,25 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument("--workers", type=int, default=10)
+    parser.add_argument(
+        "--policy",
+        action="append",
+        help=(
+            "run only this policy (repeatable) and merge its rows into the "
+            "existing table; the baseline already on disk is kept"
+        ),
+    )
     args = parser.parse_args()
+    if args.policy:
+        unknown = [p for p in args.policy if p not in {q.name for q in ALL_POLICIES}]
+        if unknown:
+            parser.error(f"unknown policy: {', '.join(unknown)}")
 
-    frame = run(workers=args.workers, turnover=args.turnover)
+    frame = run(
+        workers=args.workers,
+        turnover=args.turnover,
+        policies=tuple(args.policy) if args.policy else None,
+    )
     print(f"\nerrors: {int(frame['error'].notna().sum())}")
     ok = frame[frame["error"].isna()]
     worst = (
