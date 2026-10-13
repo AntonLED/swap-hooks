@@ -32,6 +32,7 @@ from experiments.figures import (
     NEUTRAL,
     SURFACE,
     _save,
+    center_legend_over_axes,
     figure_note,
     snug_suplabel,
 )
@@ -282,6 +283,7 @@ def main_high() -> None:
     )
     legend.get_frame().set_linewidth(0.6)
     snug_suplabel(fig, ylabel, axes)
+    center_legend_over_axes(legend, axes)
 
     out = ROOT / "paper" / "Image" / "uu_kappa_trend_high.pdf"
     with figure_note(None):

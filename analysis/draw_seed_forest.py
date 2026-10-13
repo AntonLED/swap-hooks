@@ -198,16 +198,23 @@ def main() -> None:
     )
     fig.tight_layout()
     # legend above the panels: inside any panel it collides with a cluster
-    fig.subplots_adjust(top=0.86)
+    fig.subplots_adjust(top=0.845)
+    # The legend box spans exactly the panels, edge to edge, as in the kappa
+    # trend figure it is printed beside.
+    boxes = [ax.get_position() for ax in axes]
+    left = min(b.x0 for b in boxes)
+    width = max(b.x1 for b in boxes) - left
     legend = fig.legend(
         handles=handles,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.0),
+        loc="upper left",
+        bbox_to_anchor=(left, 1.0, width, 0.0),
+        mode="expand",
         ncol=2,
-        fontsize=10.5,
+        fontsize=9,
         borderpad=0.4,
-        handlelength=1.4,
-        columnspacing=1.0,
+        handlelength=1.1,
+        handletextpad=0.4,
+        columnspacing=0.6,
     )
     legend.get_frame().set_linewidth(0.6)
     # After every layout call: the label belongs to the axis, not to the

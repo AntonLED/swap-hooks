@@ -33,6 +33,7 @@ from experiments.figures import (
     NEUTRAL,
     SURFACE,
     _save,
+    center_legend_over_axes,
     figure_note,
 )
 from experiments.stats import bootstrap_median_ci
@@ -183,7 +184,7 @@ def main() -> None:
             label=r"$\kappa = 0.1$",
         ),
     ]
-    fig.legend(
+    legend = fig.legend(
         handles=handles,
         loc="upper center",
         bbox_to_anchor=(0.5, 1.0),
@@ -191,6 +192,7 @@ def main() -> None:
         fontsize=10.5,
         frameon=True,
     )
+    center_legend_over_axes(legend, axes)
 
     out = ROOT / "paper" / "Image" / "uu_regime_gas_grid.pdf"
     with figure_note(None):
