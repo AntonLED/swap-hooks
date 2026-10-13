@@ -125,6 +125,22 @@ def figure_note(note: str | None):
         _FIGURE_NOTE = previous
 
 
+def center_legend_over_axes(legend, axes) -> None:
+    """Centre a figure-level legend over the panels, not over the canvas.
+
+    A figure legend anchored at x = 0.5 sits at the centre of the whole canvas,
+    which includes the y-tick labels and the y sup-label on the left, so it
+    reads as shifted right of the panels it labels. Call after the last layout
+    call; the vertical anchor is left as it is.
+    """
+    boxes = [ax.get_position() for ax in np.ravel(axes)]
+    x = (min(b.x0 for b in boxes) + max(b.x1 for b in boxes)) / 2
+    _, y = (
+        legend.get_bbox_to_anchor().transformed(legend.figure.transFigure.inverted()).p0
+    )
+    legend.set_bbox_to_anchor((x, y), transform=legend.figure.transFigure)
+
+
 def snug_suplabel(fig, label, axes, pad_pt: float = 5.0) -> None:
     """Pull a figure-level sup-label up against the axes it names.
 
