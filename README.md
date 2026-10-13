@@ -4,16 +4,16 @@
 > [conventional commits](https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13)
 
 Code for **"A Reproducible Evaluation Framework for Adaptive Fee Policies in
-Uniswap v4"** (IEEE Blockchain 2026): the dynamic-fee hooks, their deployment on
-a local Uniswap v4 pool, a replay harness that runs every policy and the static
-baselines over identical 2024 market histories with modelled informed and
-uninformed flow, and the paired statistical evaluation of the LP outcome.
+Uniswap v4"**: the dynamic-fee hooks, their deployment on a local Uniswap v4
+pool, a replay harness that runs every policy and the static baselines over
+identical 2024 market histories with modelled informed and uninformed flow, and
+the paired statistical evaluation of the LP outcome.
 
-## Architecture: three layers
+## Architecture
 
 The code follows the three layers described in the paper.
 
-### 1. Contract layer — `contracts/src/`
+### 1. Contract layer -— `contracts/src/`
 
 The dynamic-fee hooks, built on OpenZeppelin's `uniswap-hooks`
 (`BaseOverrideFee`). Each hook returns its fee from `beforeSwap` and updates its
@@ -30,7 +30,7 @@ own state after a swap.
 | `CustomBaseHook.sol`, `interfaces/`                  | shared fee interface                                         |
 | `libraries/ArbMath.sol`, `UUMath.sol`, `Welford.sol` | arbitrage optimum, user acceptance model, online variance    |
 
-### 2. Deployment layer — `contracts/test/utils/`
+### 2. Deployment layer —- `contracts/test/utils/`
 
 Deploys everything a hook needs on a local EVM.
 
@@ -45,7 +45,7 @@ The hook's permissions are checked at deployment (`BaseHook` validates its
 address against `getHookPermissions()`), and
 `contracts/test/HookPermissions.t.sol` tests them for every hook.
 
-### 3. Experiment layer — `contracts/test/Replay.t.sol`, `experiments/`, `analysis/`
+### 3. Experiment layer —- `contracts/test/Replay.t.sol`, `experiments/`, `analysis/`
 
 | path                                                   | role                                                                                                                                   |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
