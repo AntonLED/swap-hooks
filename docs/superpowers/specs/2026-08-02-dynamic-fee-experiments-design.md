@@ -3,7 +3,7 @@
 Date: 2026-08-02
 
 Paper: "A Configurable Dynamic-Fee Hook Framework for Uniswap v4 Liquidity
-Pools" (IEEE ICBC 2026, submission 1571326575)
+Pools" (IEEE-Blockchain 2026, submission 1571326575)
 
 ## 1. Purpose
 

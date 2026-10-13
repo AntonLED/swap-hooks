@@ -2,7 +2,7 @@
 
 ## Architecture, model, methodology, and evaluation
 
-Prepared 2026-08-12 for integration into the ICBC 2026 submission.
+Prepared 2026-08-12 for integration into the IEEE-Blockchain 2026 submission.
 
 This document answers the eight items requested: framework architecture,
 mathematical model, experimental methodology, baselines, parameters, datasets,

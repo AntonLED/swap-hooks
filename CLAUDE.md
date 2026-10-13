@@ -113,7 +113,7 @@ fee income; IL differs across policies by single-digit USDT.
 
 ## Toolchain
 
-- **uv** (Python ≥3.13) owns all Python code and dependencies.
+- **uv** (Python >=3.13) owns all Python code and dependencies.
 - **Foundry** (`contracts/`, `via_ir`); dependencies are git submodules pinned
   to field `D` of the manifest. **Do not update the submodules** — current
   `uniswap-hooks` tip breaks every policy.
@@ -124,7 +124,7 @@ fee income; IL differs across policies by single-digit USDT.
 ```bash
 uv sync                                        # Python deps
 git submodule update --init --recursive        # pinned contract deps
-cd contracts && forge build && forge test      # ~110 Solidity tests
+cd contracts && forge build && forge test      # ~95 Solidity tests
 uv run pytest -q                               # Python tests (excludes slow)
 uv run pytest -q -m slow                       # slow tests: drive forge replays
 npm run format                                 # Prettier + forge fmt + ruff

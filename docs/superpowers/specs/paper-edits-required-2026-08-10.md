@@ -7,9 +7,9 @@
 
 # Paper edits required — work list, 2026-08-10
 
-Target: `paper/main.tex`, IEEE ICBC 2026, deadline 2026-08-18. **This document
-changes nothing.** `paper/` was read only; every edit below is for the owner to
-apply by hand.
+Target: `paper/main.tex`, IEEE-Blockchain 2026, deadline 2026-08-18. **This
+document changes nothing.** `paper/` was read only; every edit below is for the
+owner to apply by hand.
 
 Sources: `paper/main.tex` (330 lines, unmodified since 2026-08-02),
 `docs/superpowers/specs/REVIEW-traceability-2026-08-10.md`,
