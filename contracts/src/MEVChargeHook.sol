@@ -45,8 +45,6 @@ contract MEVChargeHook is BaseOverrideFee, Ownable {
     uint256 private constant MALICIOUS_FEE_MAX_DEFAULT = 2500; // 25%
     uint256 private constant FIXED_LP_FEE_DEFAULT = 30; // 0.3%
     uint256 private constant MAX_COOLDOWN_SECONDS = 600;
-    /// @dev `internal` so `MEVChargeHookFixed` can reuse it; the value and
-    ///      every use of it are unchanged.
     uint256 internal constant FEE_DENOMINATOR = 10000;
     uint8 private constant MAX_BLOCK_OFFSET = 3;
     uint8 private constant MAX_LINK_DEPTH = 3;
@@ -447,9 +445,7 @@ contract MEVChargeHook is BaseOverrideFee, Ownable {
     ///      one way against 30 bps the other. The surcharge tracks which token
     ///      the input is denominated in, not price impact.
     ///
-    ///      Kept as shipped, and overridden in `MEVChargeHookFixed`, so the
-    ///      experiment can report both. `virtual` is the only change to the
-    ///      original behaviour, and it is not one.
+    ///      Kept as shipped.
     function _impactRatioBps(PoolKey calldata, bool, uint256 absAmount, uint128 liq)
         internal
         view

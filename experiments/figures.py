@@ -686,82 +686,6 @@ def volatility_stratification(
     _save(fig, out, pd.DataFrame(records))
 
 
-def capture_share_sensitivity(frame: pd.DataFrame, out: Path) -> None:
-    """PegCapture against its own `captureShare`, with the volume it gives up.
-
-    This is a sensitivity analysis, not a pre-registered comparison, and the
-    figure has to say so: `captureShare` was fixed at 0.5 during implementation
-    and the headline PegCapture result rests on it.
-
-    Small multiples, and each net-result panel keeps its own y scale. High
-    volatility moves by thousands and low volatility by hundreds; on a shared
-    scale the low and mid curves flatten onto zero and the sign change -- the
-    entire point of the sweep -- becomes invisible.
-
-    The volume row is not optional. The parameter works by leaving the
-    arbitrageur less, so "earns more" and "trades less" move together, and net
-    result shown alone would reward the degenerate answer (spec §12.1).
-    """
-    frame = frame[frame["error"].isna()].copy()
-    frame["share"] = frame["capture_share"] / 1e6
-
-    fig, axes = plt.subplots(2, 3, figsize=(8.2, 4.2), sharex=True)
-    records = []
-    rows = [
-        ("net_result", "net result vs HODL, USDT"),
-        ("retained_volume", "retained volume, USDT"),
-    ]
-    for row, (column, label) in enumerate(rows):
-        for col, regime in enumerate(REGIME_ORDER):
-            ax = axes[row][col]
-            series = (
-                frame[frame["regime"] == regime]
-                .groupby("share")[column]
-                .mean()
-                .sort_index()
-            )
-            ax.plot(
-                series.index,
-                series.to_numpy(),
-                color=ACCENT,
-                linewidth=1.6,
-                marker="o",
-                markersize=3.5,
-                zorder=3,
-            )
-            # The value the matrix actually ran, so the reader can see where the
-            # pre-registered number sits on a curve that did not choose it.
-            ax.axvline(
-                0.5, color=INK_MUTED, linewidth=0.8, linestyle=(0, (2, 3)), zorder=1
-            )
-            if column == "net_result":
-                ax.axhline(0, color=INK_MUTED, linewidth=0.8, zorder=2)
-                ax.set_title(f"{regime} volatility", fontsize=8, color=INK)
-                records += [
-                    {"regime": regime, "share": s, "net_result": v}
-                    for s, v in series.items()
-                ]
-            if col == 0:
-                ax.set_ylabel(label, fontsize=7.5, color=INK)
-            if row == 1:
-                ax.set_xlabel("captureShare", fontsize=8, color=INK)
-            ax.margins(x=0.10, y=0.16)
-            _style(ax)
-            ax.grid(True, axis="y", color=GRID, linewidth=0.6, zorder=0)
-
-    axes[0][0].annotate(
-        "0.5 as run",
-        (0.5, 1.0),
-        xycoords=("data", "axes fraction"),
-        textcoords="offset points",
-        xytext=(3, -7),
-        fontsize=6.5,
-        color=INK_MUTED,
-        va="top",
-    )
-    _save(fig, out, pd.DataFrame(records))
-
-
 def valuation_comparison(frame: pd.DataFrame, out: Path) -> None:
     """Both co-primary valuations of the same policies, on one axis.
 
@@ -893,8 +817,8 @@ def operating_points(table: pd.DataFrame, out: Path) -> None:
     interval clears zero — and those are exactly what separate panels preserve.
 
     The policies are split into two rows by the size of their effect, each row
-    on its own scale. Without the split the figure is unreadable: `PegDefence`
-    loses eleven thousand USDT a window and sets an axis on which the entire
+    on its own scale. Without the split the figure is unreadable: a policy that
+    loses eleven thousand USDT a window sets an axis on which the entire
     contest between `DAHook`, `BAHook` and the baseline — a few hundred — is
     three pixels wide. Every policy still appears exactly once and no row is
     dropped; only the zoom differs, and each row says what its own is.
@@ -1089,7 +1013,6 @@ def draw_all(frame: pd.DataFrame, results_dir: Path, figures_dir: Path) -> None:
 # are not panels here: they would be flat lines, and the baseline already
 # appears inside every panel as the dashed reference.
 RESPONSE_POLICIES = [
-    "PegCapture",
     "BAHook",
     "DAHook",
     "ABHook",

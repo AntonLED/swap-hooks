@@ -28,8 +28,6 @@ def _frame():
         "ABHook",
         "BAHook",
         "DAHook",
-        "PegCapture",
-        "PegDefence",
         "MEVChargeHook",
         "VolatilityHook",
     ]
@@ -85,7 +83,7 @@ def test_fee_distribution_reports_pinning_against_each_policys_own_box(tmp_path)
     """
     rows = (
         [{"policy": "MyHook@3000", "pair": "ETH/SHIB", "fee_bps": 30.0}] * 50
-        + [{"policy": "PegDefence", "pair": "ETH/SHIB", "fee_bps": 1.0}] * 50
+        + [{"policy": "BAHook", "pair": "ETH/SHIB", "fee_bps": 1.0}] * 50
         # Above the shared 100 bps box. MEVChargeHook was clamped to that box
         # for the UU matrix (2026-08-09 prereg), so a fee that used to sit
         # mid-box now sits at its cap -- which is exactly what the figure has
@@ -97,9 +95,9 @@ def test_fee_distribution_reports_pinning_against_each_policys_own_box(tmp_path)
 
     assert out.exists() and out.stat().st_size > 0
     table = pd.read_csv(out.with_suffix(".csv")).set_index("policy")
-    assert set(table.index) == {"MyHook@3000", "PegDefence", "MEVChargeHook"}
+    assert set(table.index) == {"MyHook@3000", "BAHook", "MEVChargeHook"}
     assert table.loc["MyHook@3000", "median_bps"] == pytest.approx(30.0)
-    assert table.loc["PegDefence", "share_at_floor"] == pytest.approx(1.0)
+    assert table.loc["BAHook", "share_at_floor"] == pytest.approx(1.0)
     # Since the clamp its box IS 30-100 bps, so 300 bps reads as at cap. The
     # original assertion documented the pre-clamp 30-1000 box.
     assert table.loc["MEVChargeHook", "share_at_cap"] == pytest.approx(1.0)
@@ -343,7 +341,7 @@ def _two_points():
             ("DAHook", 341.0),
             ("BAHook", 114.0),
             ("ABHook", -254.0),
-            ("PegDefence", -10880.0),
+            ("VolatilityHook", -10880.0),
         ):
             value = median * scale
             rows.append(
@@ -370,7 +368,7 @@ def test_operating_points_draws_one_column_per_configuration(tmp_path):
     # Every policy survives to the table view: the two-row split is a change of
     # zoom, and a policy quietly dropped out of the far row would read as a
     # policy that was never run.
-    assert set(beside["policy"]) == {"DAHook", "BAHook", "ABHook", "PegDefence"}
+    assert set(beside["policy"]) == {"DAHook", "BAHook", "ABHook", "VolatilityHook"}
 
 
 def test_operating_points_splits_rows_by_the_widest_reach_not_the_median(tmp_path):

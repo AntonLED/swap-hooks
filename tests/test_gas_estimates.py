@@ -30,7 +30,7 @@ def test_a_constant_fee_is_the_cheapest_hook(estimates):
     """Reading two oracle feeds costs more than returning a stored number. If
     this inverts, the harness is measuring something other than the swap."""
     baseline = min(v for k, v in estimates.items() if k.startswith("MyHook@"))
-    for name in ("BAHook", "VolatilityHook", "PegCapture"):
+    for name in ("BAHook", "VolatilityHook"):
         if name in estimates:
             assert estimates[name] > baseline, (
                 f"{name} should cost more than a constant fee"

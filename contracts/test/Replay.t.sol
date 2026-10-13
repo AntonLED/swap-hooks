@@ -26,7 +26,6 @@ import {EventLog} from "./utils/EventLog.sol";
 import {EasyPosm} from "./utils/libraries/EasyPosm.sol";
 import {ArbMath} from "../src/libraries/ArbMath.sol";
 import {UUMath} from "../src/libraries/UUMath.sol";
-import {PegStabilityHook} from "../src/PegStabilityHook.sol";
 
 /**
  * @notice Replays a historical window against one policy and records raw
@@ -152,12 +151,6 @@ contract ReplayTest is Test, HookTest {
 
         uint24 feePips = uint24(vm.envOr("FEE_PIPS", uint256(0)));
         if (feePips != 0) hookContract.setFee(feePips, poolKey);
-
-        // Sensitivity axis, not part of the pre-registered matrix: PegCapture's
-        // headline advantage rests on this constant, so it has to be swept and
-        // reported rather than asserted. Zero leaves the contract default.
-        uint256 share = vm.envOr("CAPTURE_SHARE", uint256(0));
-        if (share != 0) PegStabilityHook(address(hookContract)).setCaptureShare(share);
     }
 
     /// @notice Test-only configuration seam for composed harnesses (see

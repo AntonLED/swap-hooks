@@ -23,19 +23,12 @@ class Policy:
     size_dependent: bool = False  # fee reads amountSpecified (spec §A.8)
 
 
-# The six hooks. PegStabilityHook ships in both readings (spec §5).
+# The five dynamic hooks.
 HOOKS: tuple[Policy, ...] = (
     Policy("BAHook", "BAHook"),
     Policy("DAHook", "DAHook"),
     Policy("ABHook", "ABHook"),
-    Policy("PegDefence", "PegDefence"),
-    Policy("PegCapture", "PegCapture"),
     Policy("MEVChargeHook", "MEVChargeHook", size_dependent=True),
-    # The same template with a dimensionless impact measure. Both are run: the
-    # shipped one sizes a trade by amount/L, which is not a ratio, and charges
-    # 354 bps one way against 30 bps the other purely from the input's
-    # denomination. See MEVChargeHookFixed.
-    Policy("MEVChargeHookFixed", "MEVChargeHookFixed", size_dependent=True),
     Policy("VolatilityHook", "VolatilityHook"),
 )
 

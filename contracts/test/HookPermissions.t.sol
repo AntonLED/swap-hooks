@@ -68,14 +68,6 @@ contract HookPermissionsTest is Test, HookTest {
         _check("VolatilityHook");
     }
 
-    function test_pegDefenceAddressMatchesItsPermissions() public {
-        _check("PegDefence");
-    }
-
-    function test_pegCaptureAddressMatchesItsPermissions() public {
-        _check("PegCapture");
-    }
-
     function test_mEVChargeHookAddressMatchesItsPermissions() public {
         _check("MEVChargeHook");
     }

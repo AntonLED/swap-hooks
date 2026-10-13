@@ -14,18 +14,6 @@ library HookFlags {
             | Hooks.AFTER_REMOVE_LIQUIDITY_RETURNS_DELTA_FLAG | Hooks.BEFORE_SWAP_FLAG
     ) ^ (0x4444 << 144);
 
-    /// @notice Same permissions as MEV_CHARGE_HOOK_FLAGS, different address.
-    /// @dev The permission bits must match, because the two contracts declare
-    ///      the same callbacks; only the salt differs so both can be deployed
-    ///      in one run.
-    uint160 public constant MEV_CHARGE_FIXED_HOOK_FLAGS = uint160(
-        Hooks.AFTER_INITIALIZE_FLAG | Hooks.AFTER_ADD_LIQUIDITY_FLAG | Hooks.AFTER_REMOVE_LIQUIDITY_FLAG
-            | Hooks.AFTER_REMOVE_LIQUIDITY_RETURNS_DELTA_FLAG | Hooks.BEFORE_SWAP_FLAG
-    ) ^ (0x4455 << 144);
-
-    uint160 public constant PEG_STABILITY_HOOK_FLAGS =
-        uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG) ^ (0x4444 << 144);
-
     uint160 public constant DA_HOOK_FLAGS =
         uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG) ^ (0x4444 << 144);
 

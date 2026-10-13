@@ -14,9 +14,8 @@ import {MEVChargeHook} from "../../src/MEVChargeHook.sol";
 
 /**
  * @notice Pins the fee-box compliance fix (2026-08-09-uu-flow-design.md §7):
- *         every harness deployment of MEVChargeHook (and MEVChargeHookFixed,
- *         which inherits the same clamp path) must stay inside the shared
- *         box every other policy respects, [1, 100] bps (spec §4.5).
+ *         every harness deployment of MEVChargeHook must stay inside the
+ *         shared box every other policy respects, [1, 100] bps (spec §4.5).
  *
  * There was no MEVCharge characterisation test file in this repo before this
  * change (contracts/test/policies/ had ABHookDelta, FeeBounds, PegStability,
@@ -56,14 +55,6 @@ contract MEVChargeTest is Test, HookTest {
 
     function test_MEVChargeHook_stayInsideTheSharedBoxAboveTheImpactTrigger() public {
         deployHookAndFeeds("MEVChargeHook");
-        deployPool();
-
-        assertLe(_feeAboveImpactTrigger(true), BOX_MAX_PIPS, "A->B must stay inside the shared 100bps box");
-        assertLe(_feeAboveImpactTrigger(false), BOX_MAX_PIPS, "B->A must stay inside the shared 100bps box");
-    }
-
-    function test_MEVChargeHookFixed_staysInsideTheSharedBoxAboveTheImpactTrigger() public {
-        deployHookAndFeeds("MEVChargeHookFixed");
         deployPool();
 
         assertLe(_feeAboveImpactTrigger(true), BOX_MAX_PIPS, "A->B must stay inside the shared 100bps box");

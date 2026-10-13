@@ -141,7 +141,6 @@ def run_one(
     warmup_candles: int = 60,
     size_dependent: bool = False,
     work_dir: Path | None = None,
-    capture_share: int = 0,
     results_dir: Path | None = None,
     uu_mode: str = "off",
     uu_lambda_wad: int = UU_LAMBDA_WAD,
@@ -190,18 +189,16 @@ def run_one(
         # over 2024 equals one basket. That rule fixes the retail scale by
         # turnover and never checked what informed/uninformed ratio it implied:
         # it implies 94-99% retail. An override makes that a swept axis instead
-        # of an assumption, which is the same treatment `captureShare` got and
-        # for the same reason. Default None keeps every existing call identical.
+        # of an assumption. Default None keeps every existing call identical.
         kappa = kappa_for_pair(symbol0, symbol1) if uu_kappa is None else uu_kappa
         uu_trace_path = traces / "uu_trace.csv"
         export_uu_trace(
             profile, kappa, uu_trace_path, mode=uu_mode, seed=uu_seed, sigma=uu_sigma
         )
 
-    share_tag = f"-cs{capture_share}" if capture_share else ""
     name = (
         f"{hook}-{fee_pips}-{symbol0}-{symbol1}-{start_ms}"
-        f"-{gas_price_wei}-{address_mode}{share_tag}.jsonl"
+        f"-{gas_price_wei}-{address_mode}.jsonl"
     )
     out = results / name
 
@@ -219,7 +216,6 @@ def run_one(
         "BASKET_USDT": str(basket_usdt),
         "WARMUP_CANDLES": str(warmup_candles),
         "SIZE_DEPENDENT": "true" if size_dependent else "false",
-        "CAPTURE_SHARE": str(capture_share),
     }
     # Mode "off" must be byte-identical to before this feature existed: no
     # UU_TRACE key at all, not even an empty one (2026-08-09-uu-flow-design.md

@@ -120,10 +120,9 @@ def read_events(path: Path) -> tuple[pd.DataFrame, dict]:
 
 # Each hook's own fee box, in basis points, read off the contracts:
 # ABHook/BAHook/DAHook/VolatilityHook `F_MIN=100, MAX_FEE=10000` pips,
-# PegStabilityHook `MIN_FEE_BPS=100, MAX_FEE_BPS=10000` pips, and MEVChargeHook
-# `fixedLpFee=30, config.feeMax=1000` -- the last one already in bps, and an
-# order of magnitude wider than every other box. A figure that draws one shared
-# box across all policies states something false about four of them.
+# and MEVChargeHook `fixedLpFee=30, config.feeMax=1000` -- the last one already
+# in bps, and an order of magnitude wider than every other box. A figure that
+# draws one shared box across all policies states something false about them.
 FEE_BOXES_BPS = {
     # Not 100 bps: ABHook's constant sum binds before any ceiling, so one
     # direction reaches 59 bps only by pinning the other to the floor.
@@ -131,15 +130,10 @@ FEE_BOXES_BPS = {
     "BAHook": (1.0, 100.0),
     "DAHook": (1.0, 100.0),
     "VolatilityHook": (1.0, 100.0),
-    "PegCapture": (1.0, 100.0),
-    "PegDefence": (1.0, 100.0),
     # Clamped to the shared 100 bps box for the UU matrix
     # (2026-08-09 prereg). Judged against the old 1000 bps ceiling a
     # policy sitting at its real cap reads as nowhere near it.
     "MEVChargeHook": (30.0, 100.0),
-    # Same bounds as the template it derives from; only the impact measure
-    # differs.
-    "MEVChargeHookFixed": (30.0, 100.0),
     # MyHook@N is a constant and has no box at all.
 }
 
@@ -169,10 +163,9 @@ def applied_fees(results_dir: Path, address_mode: str = "persistent") -> pd.Data
     rows: list[dict] = []
     for path in sorted(Path(results_dir).glob("*.jsonl")):
         parts = path.stem.split("-")
-        # Exactly seven fields, and the mode matched exactly. The sensitivity
-        # sweep writes an eighth (`-cs<share>`); a prefix match on the mode let
-        # those through and pooled 62k sensitivity swaps into PegCapture's
-        # pre-registered row. The two must never mix.
+        # Exactly seven fields, and the mode matched exactly. A prefix match on
+        # the mode once let an eight-field sensitivity sweep (`-cs<share>`)
+        # into a pre-registered row. The two must never mix.
         if len(parts) != 7 or parts[6] != address_mode:
             continue
         pair = _PAIR_BY_SYMBOLS.get((parts[2], parts[3]))

@@ -9,8 +9,8 @@ def test_applied_fees_excludes_the_sensitivity_sweep(tmp_path):
     """The sensitivity runs must never enter a pre-registered figure.
 
     Their filenames differ only by a trailing `-cs<share>` field. A prefix match
-    on the address mode let all 504 of them through, pooling 62k swaps into
-    PegCapture's row and widening its reported fee range by a factor of two.
+    on the address mode once let all 504 of them through, pooling 62k swaps into
+    a pre-registered row and widening its reported fee range by a factor of two.
     """
     swap = {
         "kind": "swap",
@@ -34,7 +34,7 @@ def test_applied_fees_excludes_the_sensitivity_sweep(tmp_path):
         "sqrtPriceAfterX96": "1",
     }
     line = json.dumps(swap)
-    stem = "PegCapture-0-ETHUSDT-SHIBUSDT-1704067200000-20000000000-persistent"
+    stem = "BAHook-0-ETHUSDT-SHIBUSDT-1704067200000-20000000000-persistent"
     (tmp_path / f"{stem}.jsonl").write_text(line + "\n")
     (tmp_path / f"{stem}-cs750000.jsonl").write_text(line + "\n")
     (tmp_path / f"{stem[:-10]}fresh.jsonl").write_text(line + "\n")

@@ -597,7 +597,7 @@ def test_uu_flow_shares_stay_in_the_unit_interval_and_never_divide_by_zero(tmp_p
         [
             frame,
             frame.head(1).assign(
-                policy="PegDefence", uu_volume=0.0, arb_volume=0.0, uu_fee_share=0.0
+                policy="VolatilityHook", uu_volume=0.0, arb_volume=0.0, uu_fee_share=0.0
             ),
         ],
         ignore_index=True,
@@ -608,7 +608,7 @@ def test_uu_flow_shares_stay_in_the_unit_interval_and_never_divide_by_zero(tmp_p
     for column in ("uu_share_of_volume", "uu_participation", "uu_fee_share"):
         values = table[column].dropna()
         assert ((values >= 0) & (values <= 1)).all(), f"{column} left [0, 1]"
-    dead = table[table["policy"] == "PegDefence"].iloc[0]
+    dead = table[table["policy"] == "VolatilityHook"].iloc[0]
     assert pd.isna(dead["uu_share_of_volume"]), (
         "a pool with no volume has no share; 0 would read as 'all arbitrage'"
     )
@@ -681,7 +681,7 @@ def test_kappa_sweep_windows_are_a_subset_of_the_matrix_windows():
 
 
 def test_kappa_sweep_trace_directories_cannot_leak_into_the_matrix_figures(tmp_path):
-    """The sweep writes seven-field trace names -- `capture_share` is 0, so
+    """The sweep writes seven-field trace names, so
     there is no eighth field to filter on. Its only protection is the
     `turnover-<multiple>/` subdirectory, and `events` globs non-recursively.
     """
